@@ -23,12 +23,12 @@ export default async function BookingPage({ params, searchParams }: { params: { 
   return (
     <>
       <AdminNav />
-      <main className="mx-auto max-w-5xl space-y-6 px-4 py-6">
+      <main className="mx-auto max-w-5xl space-y-6 overflow-hidden px-4 py-6">
         {searchParams.new && <p className="rounded-lg bg-emerald-50 p-3 text-emerald-800">Booking created. Send the link below to your guest.</p>}
 
         <section className="card space-y-1">
           <h1 className="text-xl font-semibold">{houseName}</h1>
-          <p>{booking.check_in} → {booking.check_out} · {booking.guests} guests</p>
+          <p>{booking.check_in} → {booking.check_out} · {booking.guests} {booking.guests === 1 ? 'guest' : 'guests'}</p>
           {booking.lead_name && <p className="text-stone-600">Lead: {booking.lead_name}</p>}
           {booking.booking_ref && <p className="text-stone-600">Ref: {booking.booking_ref}</p>}
           {booking.notes && <p className="text-stone-600">Notes: {booking.notes}</p>}
@@ -46,7 +46,7 @@ export default async function BookingPage({ params, searchParams }: { params: { 
                 <span className="label mb-0">{label}</span>
                 <CopyButton text={msg} />
               </div>
-              <pre className="whitespace-pre-wrap rounded bg-stone-50 p-3 text-sm text-stone-700">{msg}</pre>
+              <pre className="whitespace-pre-wrap break-all rounded bg-stone-50 p-3 text-sm text-stone-700">{msg}</pre>
             </div>
           ))}
         </section>

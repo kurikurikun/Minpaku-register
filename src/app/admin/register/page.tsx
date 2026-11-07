@@ -10,7 +10,7 @@ export default async function RegisterPage({ searchParams }: { searchParams: Reg
   const admin = requireAdmin();
   const { rows, houses } = await registerRows(admin, searchParams);
   const qs = new URLSearchParams(Object.entries(searchParams).filter(([, v]) => v) as [string, string][]).toString();
-  const houseName = houses.find((h) => h.id === searchParams.house)?.name;
+  const houseName = houses.find((h) => h.id === searchParams.house)?.name ?? (houses.length === 1 ? houses[0].name : undefined);
   const cols = REGISTER_COLUMNS.filter(([k]) => k !== 'passport_url');
 
   return (
