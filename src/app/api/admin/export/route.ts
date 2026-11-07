@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { isAdmin } from '@/lib/auth';
+import { getAdmin } from '@/lib/auth';
 import { REGISTER_COLUMNS, registerRows } from '@/lib/register';
 
 export const runtime = 'nodejs';
@@ -11,9 +11,10 @@ const cell = (v: string) => {
 };
 
 export async function GET(req: Request) {
-  if (!isAdmin()) return new NextResponse('Unauthorized', { status: 401 });
+  const admin = getAdmin();
+  if (!admin) return new NextResponse('Unauthorized', { status: 401 });
   const p = new URL(req.url).searchParams;
-  const { rows } = await registerRows({ house: p.get('house') ?? '', from: p.get('from') ?? '', to: p.get('to') ?? '' });
+  const { rows } = await registerRows(admin, { house: p.get('house') ?? '', from: p.get('from') ?? '', to: p.get('to') ?? '' });
   const lines = [
     REGISTER_COLUMNS.map(([, l]) => cell(l)).join(','),
     ...rows.map((r) => REGISTER_COLUMNS.map(([k]) => cell(r[k] ?? '')).join(',')),

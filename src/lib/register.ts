@@ -1,10 +1,13 @@
 import 'server-only';
+import { canSee, type Admin } from './auth';
 import { listGuests, listHouses, type Guest } from './db';
 
 export type RegisterFilter = { house?: string; from?: string; to?: string };
 
-export async function registerRows(f: RegisterFilter): Promise<{ rows: Guest[]; houses: Awaited<ReturnType<typeof listHouses>> }> {
-  const [guests, houses] = await Promise.all([listGuests(), listHouses()]);
+export async function registerRows(admin: Admin, f: RegisterFilter): Promise<{ rows: Guest[]; houses: Awaited<ReturnType<typeof listHouses>> }> {
+  const [allGuests, allHouses] = await Promise.all([listGuests(), listHouses()]);
+  const houses = allHouses.filter((h) => canSee(admin, h.id));
+  const guests = allGuests.filter((g) => canSee(admin, g.house_id));
   const rows = guests
     .filter((g) => (!f.house || g.house_id === f.house) && (!f.from || g.check_in >= f.from) && (!f.to || g.check_in <= f.to))
     .sort((a, b) => a.check_in.localeCompare(b.check_in) || a.token.localeCompare(b.token) || Number(a.guest_no) - Number(b.guest_no));

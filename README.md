@@ -1,65 +1,74 @@
-# Minpaku Guest Check-in
+# Minpaku Guest Register
 
-Online guest registration (宿泊者名簿) for minpaku houses, built to meet the
+Online guest registration (宿泊者名簿) for minpaku houses, built for the
 住宅宿泊事業法 requirements: every guest's name, address, and occupation, plus
 nationality, passport number, and a passport copy for guests who don't live in Japan.
 
 - **Guests** get a personal link per booking, fill in every person in their party
   on their phone (English / 日本語 / 中文 / 한국어), and photograph their passports.
-- **You** log in at `/admin` to create bookings, copy a ready-made EN/JA message
+- **Hosts** log in at `/admin` to create bookings, copy a ready-made EN/JA message
   with the link, see who's registered (with passport photos), and print or download
-  the register by house and date range.
-- **Data** lives in your Google Workspace: one Google Sheet (tabs `Houses`,
-  `Bookings`, `Guests`, created automatically) and one Drive folder for passport photos.
-- **Email alert** to you when every guest in a booking has registered.
+  the register by house and date range. Each login only sees its own house(s).
+- **Data** lives in a personal Google account: one Google Sheet (tabs `Houses`,
+  `Bookings`, `Guests`) and one private Drive folder for passport photos, reached
+  through a small Apps Script (`apps-script/Code.gs`).
+- **Email** from that Gmail account when every guest in a booking has registered.
 
-## Houses
+## Setup (about 10 minutes, one time)
 
-Edit the `Houses` tab in the Sheet. It's seeded with `hayama` / Hayama Retreat and
-`house2` / House 2. Change the names, or add rows for more houses. Keep the `id`
-column unchanged once there are bookings.
+### 1. Apps Script (in the Google account that will hold the data)
+1. Open <https://script.google.com> → **New project**. Name it `Minpaku Register`.
+2. Delete the sample code, paste in all of [`apps-script/Code.gs`](apps-script/Code.gs), save.
+3. In the toolbar, pick the **`setup`** function → **Run** → **Review permissions** →
+   choose your account → *Advanced* → *Go to Minpaku Register (unsafe)* → **Allow**.
+   (The warning appears because it's your own unpublished script.)
+4. Open **Execution log**. It shows the new Sheet, the Passport folder, and
+   `APPS_SCRIPT_SECRET`. Copy the secret.
+5. **Deploy → New deployment** → gear icon → **Web app**.
+   *Execute as:* **Me** · *Who has access:* **Anyone** → **Deploy** → copy the **Web app URL**.
 
-## Setup (about 15 minutes, one time)
+"Anyone" only means the app can reach the script; every request must carry the
+secret, and the Sheet and folder stay private to your account.
 
-### 1. Shared Drive, Sheet, and folder
-1. In Google Drive, create a new **Shared Drive**, e.g. `Minpaku Guest Register`.
-   Keep membership to yourself (and co-hosts only). It holds passport copies.
-2. Inside it, create a blank Google Sheet (`Guest Register`) and a folder (`Passports`).
-3. Copy the Sheet ID and the folder ID from their URLs.
+> If you edit `Code.gs` later: **Deploy → Manage deployments → Edit → Version: New version**,
+> so the URL stays the same.
 
-### 2. Google service account
-1. Go to <https://console.cloud.google.com>, create a project (e.g. `minpaku-checkin`).
-2. **APIs & Services → Library**: enable **Google Sheets API** and **Google Drive API**.
-3. **IAM & Admin → Service Accounts → Create**. Name it `checkin`. No roles needed.
-4. Open it → **Keys → Add key → JSON**. A `.json` file downloads.
-5. Back in the Shared Drive → **Manage members**: add the service account's email
-   (`checkin@<project>.iam.gserviceaccount.com`) as **Content manager**.
+### 2. Deploy on Vercel
+1. Vercel → **Add New → Project** → import `Minpaku-register`.
+2. Add environment variables (see `.env.example`):
+   - `APPS_SCRIPT_URL` — the Web app URL
+   - `APPS_SCRIPT_SECRET` — the secret from the log
+   - `ADMIN_ACCOUNTS` — the logins, e.g.
+     `[{"user":"chris","password":"…","houses":["shinagawa"]},{"user":"friend","password":"…","houses":["hayama"]}]`
+     Use `["*"]` for someone who should see every house.
+   - `OWNER_EMAIL` — optional fallback for alert emails
+3. **Deploy**, then open `https://<your-app>.vercel.app/admin`.
 
-> If your org blocks service-account key creation, use option B (OAuth) in `.env.example`.
+The Sheet's tabs are created on the first page load.
 
-### 3. Deploy on Vercel
-1. Import this repo in Vercel (New Project).
-2. Add the environment variables from `.env.example`. For
-   `GOOGLE_SERVICE_ACCOUNT_JSON`, paste the entire contents of the JSON key file.
-3. Deploy, then open `https://<your-app>/admin` and log in.
+### 3. Houses
+In the Sheet's `Houses` tab (seeded with `shinagawa` and `hayama`):
+- `name` — shown to guests
+- `notify_email` — who gets the "check-in complete" email for that house
+- `address`, `license_no` (届出番号) — for your records
 
-### 4. Email alerts (optional)
-Create a free account at <https://resend.com>, verify your domain, and set
-`RESEND_API_KEY`, `OWNER_EMAIL`, `EMAIL_FROM`.
+Add a row to add a house. Don't change an `id` once it has bookings.
 
 ## Day-to-day
-1. New booking → `/admin` → pick house, dates, number of guests → **Create check-in link**.
+1. New booking → `/admin` → house, dates, number of guests → **Create check-in link**.
 2. Copy the EN or JA message and send it via Airbnb / Booking.com / email.
-3. Status shows `1/3`, `3/3 ✓`. You get an email when it's complete.
+3. Status shows `1/3`, `3/3 ✓`; the house's notify email gets a message when complete.
 4. For inspections: **Register 名簿** → filter → **Print / Save PDF** or **Download CSV**.
 
 ## Legal notes
-- Records must be kept for **3 years** — don't delete rows or photos before then.
-- The law also requires **identity verification** (face-to-face, or by video/tablet
-  at check-in) that the guest matches the passport. This app collects the data; it
+- Keep records for **3 years** — don't delete rows or photos before then.
+- The law also requires **identity verification** at check-in (face-to-face or by
+  video/tablet) that the guest matches the passport. This app collects the data; it
   doesn't replace that check.
-- Links stop working 7 days after check-out, and once all guests have registered.
+- Links stop working 7 days after check-out, or once all guests have registered.
   To fix a mistake, edit the row in the Sheet.
+- All guests' data (both houses) sits in the one Google account. Hosts only see
+  their own houses in the app, but the account owner can see everything in Drive.
 
 ## Development
 ```bash

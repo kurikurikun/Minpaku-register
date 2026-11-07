@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { requireAdmin } from '@/lib/auth';
+import { canSee, requireAdmin } from '@/lib/auth';
 import { listBookings, listGuests, listHouses } from '@/lib/db';
 import AdminNav from '@/components/AdminNav';
 import NewBookingForm from '@/components/NewBookingForm';
@@ -7,8 +7,9 @@ import NewBookingForm from '@/components/NewBookingForm';
 export const dynamic = 'force-dynamic';
 
 export default async function AdminHome({ searchParams }: { searchParams: { past?: string } }) {
-  requireAdmin();
-  const [houses, bookings, guests] = await Promise.all([listHouses(), listBookings(), listGuests()]);
+  const admin = requireAdmin();
+  const [allHouses, bookings, guests] = await Promise.all([listHouses(), listBookings(), listGuests()]);
+  const houses = allHouses.filter((h) => canSee(admin, h.id));
   const showPast = searchParams.past === '1';
   const today = new Date(Date.now() + 9 * 3600_000).toISOString().slice(0, 10); // JST
   const counts = new Map<string, number>();
@@ -16,6 +17,7 @@ export default async function AdminHome({ searchParams }: { searchParams: { past
   const houseName = (id: string) => houses.find((h) => h.id === id)?.name ?? id;
 
   const list = bookings
+    .filter((b) => canSee(admin, b.house_id))
     .filter((b) => (showPast ? b.check_out < today : b.check_out >= today))
     .sort((a, b) => (showPast ? b.check_in.localeCompare(a.check_in) : a.check_in.localeCompare(b.check_in)));
 

@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { requireAdmin } from '@/lib/auth';
+import { canSee, requireAdmin } from '@/lib/auth';
 import { getBooking, guestsForBooking, listHouses } from '@/lib/db';
 import { baseUrl } from '@/lib/url';
 import AdminNav from '@/components/AdminNav';
@@ -8,9 +8,9 @@ import CopyButton from '@/components/CopyButton';
 export const dynamic = 'force-dynamic';
 
 export default async function BookingPage({ params, searchParams }: { params: { token: string }; searchParams: { new?: string } }) {
-  requireAdmin();
+  const admin = requireAdmin();
   const booking = await getBooking(params.token);
-  if (!booking) notFound();
+  if (!booking || !canSee(admin, booking.house_id)) notFound();
   const [houses, guests] = await Promise.all([listHouses(), guestsForBooking(booking.token)]);
   const house = houses.find((h) => h.id === booking.house_id);
   const houseName = house?.name ?? booking.house_id;

@@ -1,12 +1,14 @@
 import 'server-only';
 import { randomBytes } from 'node:crypto';
-import { gapi, sheetId } from './google';
+import { cache } from 'react';
+import { store } from './store';
 
-// The Google Sheet is the database. Three tabs are created automatically on first use.
-// You can edit the Houses tab directly in Google Sheets to rename houses or add more.
-const TABS = {
-  Houses: ['id', 'name', 'address', 'license_no'],
-  Bookings: ['token', 'house_id', 'check_in', 'check_out', 'guests', 'lead_name', 'booking_ref', 'notes', 'created_at'],
+// The Google Sheet is the database. Tabs are created automatically on first use.
+// Edit the Houses tab directly in Google Sheets to rename houses, add houses,
+// or set who gets the "check-in complete" email for each house.
+const SCHEMA = {
+  Houses: ['id', 'name', 'address', 'license_no', 'notify_email'],
+  Bookings: ['token', 'house_id', 'check_in', 'check_out', 'guests', 'lead_name', 'booking_ref', 'notes', 'created_by', 'created_at'],
   Guests: [
     'submitted_at', 'token', 'house_id', 'house_name', 'check_in', 'check_out', 'guest_no',
     'full_name', 'lives_in_japan', 'nationality', 'passport_no', 'address', 'occupation',
@@ -14,67 +16,48 @@ const TABS = {
   ],
 } as const;
 
-const SEED_HOUSES = [
-  ['hayama', 'Hayama Retreat', '', ''],
-  ['house2', 'House 2', '', ''],
-];
-
-export type House = { id: string; name: string; address: string; license_no: string };
-export type Booking = {
-  token: string; house_id: string; check_in: string; check_out: string; guests: number;
-  lead_name: string; booking_ref: string; notes: string; created_at: string;
+const SEED = {
+  Houses: [
+    { id: 'shinagawa', name: 'Shinagawa Family House' },
+    { id: 'hayama', name: 'Hayama Retreat' },
+  ],
 };
-export type Guest = { [K in (typeof TABS.Guests)[number]]: string };
+
+type Cols<T extends keyof typeof SCHEMA> = (typeof SCHEMA)[T][number];
+export type House = Record<Cols<'Houses'>, string>;
+export type Booking = Omit<Record<Cols<'Bookings'>, string>, 'guests'> & { guests: number };
+export type Guest = Record<Cols<'Guests'>, string>;
 
 let ensured = false;
-async function ensureTabs() {
+async function ensure() {
   if (ensured) return;
-  const { sheets } = gapi();
-  const meta = await sheets.spreadsheets.get({ spreadsheetId: sheetId(), fields: 'sheets.properties.title' });
-  const existing = new Set(meta.data.sheets?.map((s) => s.properties?.title));
-  const missing = (Object.keys(TABS) as (keyof typeof TABS)[]).filter((t) => !existing.has(t));
-  if (missing.length) {
-    await sheets.spreadsheets.batchUpdate({
-      spreadsheetId: sheetId(),
-      requestBody: { requests: missing.map((title) => ({ addSheet: { properties: { title, gridProperties: { frozenRowCount: 1 } } } })) },
-    });
-    for (const t of missing) {
-      const values: string[][] = [[...TABS[t]]];
-      if (t === 'Houses') values.push(...SEED_HOUSES);
-      await sheets.spreadsheets.values.update({
-        spreadsheetId: sheetId(), range: `${t}!A1`, valueInputOption: 'RAW', requestBody: { values },
-      });
-    }
-  }
+  await store.ensure(SCHEMA, SEED);
   ensured = true;
 }
 
-async function readTab<T extends keyof typeof TABS>(tab: T): Promise<Record<(typeof TABS)[T][number], string>[]> {
-  await ensureTabs();
-  const res = await gapi().sheets.spreadsheets.values.get({ spreadsheetId: sheetId(), range: `${tab}!A2:Z` });
-  const cols = TABS[tab];
-  return (res.data.values ?? [])
-    .filter((r) => r.some((c) => String(c).trim()))
-    .map((r) => Object.fromEntries(cols.map((c, i) => [c, String(r[i] ?? '').trim()])) as Record<(typeof TABS)[T][number], string>);
+function shape<T extends keyof typeof SCHEMA>(tab: T, rows: Record<string, string>[]) {
+  return rows.map((r) => Object.fromEntries(SCHEMA[tab].map((c) => [c, r[c] ?? ''])) as Record<Cols<T>, string>);
 }
 
-async function appendRow<T extends keyof typeof TABS>(tab: T, row: Partial<Record<(typeof TABS)[T][number], string | number>>) {
-  await ensureTabs();
-  const values = [TABS[tab].map((c) => String((row as Record<string, unknown>)[c] ?? ''))];
-  // RAW so guest input like "=..." is never treated as a formula.
-  await gapi().sheets.spreadsheets.values.append({
-    spreadsheetId: sheetId(), range: `${tab}!A1`, valueInputOption: 'RAW', insertDataOption: 'INSERT_ROWS',
-    requestBody: { values },
-  });
-}
+// One round trip for all tabs, shared within a single page render.
+const snapshot = cache(async () => {
+  await ensure();
+  const d = await store.read(['Houses', 'Bookings', 'Guests']);
+  return {
+    houses: shape('Houses', d.Houses ?? []).filter((h) => h.id),
+    bookings: shape('Bookings', d.Bookings ?? []).map((b) => ({ ...b, guests: Number(b.guests) || 1 })),
+    guests: shape('Guests', d.Guests ?? []),
+  };
+});
 
 export async function listHouses(): Promise<House[]> {
-  return readTab('Houses');
+  return (await snapshot()).houses;
 }
-
 export async function listBookings(): Promise<Booking[]> {
-  const rows = await readTab('Bookings');
-  return rows.map((r) => ({ ...r, guests: Number(r.guests) || 1 }));
+  return (await snapshot()).bookings;
+}
+export async function listGuests(): Promise<Guest[]> {
+  return (await snapshot()).guests;
 }
 
 export async function getBooking(token: string) {
@@ -82,23 +65,24 @@ export async function getBooking(token: string) {
   return (await listBookings()).find((b) => b.token === token) ?? null;
 }
 
-export async function createBooking(b: Omit<Booking, 'token' | 'created_at'>) {
-  const token = randomBytes(16).toString('base64url');
-  await appendRow('Bookings', { ...b, token, created_at: new Date().toISOString() });
-  return token;
-}
-
-export async function listGuests(): Promise<Guest[]> {
-  return readTab('Guests');
-}
-
 export async function guestsForBooking(token: string) {
   return (await listGuests()).filter((g) => g.token === token);
 }
 
-export async function addGuest(g: Partial<Guest>) {
-  await appendRow('Guests', { ...g, submitted_at: new Date().toISOString() });
+export async function createBooking(b: Omit<Booking, 'token' | 'created_at'>) {
+  await ensure();
+  const token = randomBytes(16).toString('base64url');
+  await store.append('Bookings', { ...b, token, created_at: new Date().toISOString() });
+  return token;
 }
+
+export async function addGuest(g: Partial<Guest>) {
+  await ensure();
+  await store.append('Guests', { ...g, submitted_at: new Date().toISOString() });
+}
+
+export const uploadPhoto = store.upload;
+export const downloadPhoto = store.download;
 
 // Links stay open until 7 days after check-out.
 export function isExpired(b: Booking) {

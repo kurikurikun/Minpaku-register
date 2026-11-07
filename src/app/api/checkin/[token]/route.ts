@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
-import { addGuest, getBooking, guestsForBooking, isExpired, listHouses } from '@/lib/db';
-import { uploadPhoto } from '@/lib/google';
-import { notifyOwner } from '@/lib/email';
+import { addGuest, getBooking, guestsForBooking, isExpired, listHouses, uploadPhoto } from '@/lib/db';
+import { notify } from '@/lib/email';
 
 export const runtime = 'nodejs';
 export const maxDuration = 30;
@@ -69,8 +68,9 @@ export async function POST(req: Request, { params }: { params: { token: string }
   // Email the owner once every guest in the booking has registered.
   if (existing.length + 1 >= booking.guests) {
     const all = [...existing.map((e) => e.full_name), g.full_name];
-    const base = process.env.APP_URL?.replace(/\/$/, '') ?? '';
-    await notifyOwner(
+    const base = process.env.APP_URL?.replace(/\/$/, '') || new URL(req.url).origin;
+    await notify(
+      house?.notify_email,
       `Check-in complete: ${house?.name ?? booking.house_id} ${booking.check_in} (${booking.lead_name || g.full_name})`,
       [
         `${house?.name ?? booking.house_id}`,
@@ -80,7 +80,7 @@ export async function POST(req: Request, { params }: { params: { token: string }
         'Guests:',
         ...all.map((n, i) => `  ${i + 1}. ${n}`),
         '',
-        base ? `Details: ${base}/admin/b/${booking.token}` : '',
+        `Details: ${base}/admin/b/${booking.token}`,
       ].join('\n'),
     );
   }

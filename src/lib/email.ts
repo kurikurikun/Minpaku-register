@@ -1,22 +1,13 @@
 import 'server-only';
+import { store } from './store';
 
-// Sends via Resend (https://resend.com). Skipped silently if not configured.
-export async function notifyOwner(subject: string, text: string) {
-  const key = process.env.RESEND_API_KEY;
-  const to = process.env.OWNER_EMAIL;
-  if (!key || !to) return;
+// Sent from your Gmail via the Apps Script. Goes to the house's notify_email
+// (Houses tab), falling back to OWNER_EMAIL. Skipped if neither is set.
+export async function notify(to: string | undefined, subject: string, body: string) {
+  const recipient = (to || process.env.OWNER_EMAIL || '').trim();
+  if (!recipient) return;
   try {
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        from: process.env.EMAIL_FROM || 'Guest Check-in <onboarding@resend.dev>',
-        to: to.split(',').map((s) => s.trim()),
-        subject,
-        text,
-      }),
-    });
-    if (!res.ok) console.error('Email failed', res.status, await res.text());
+    await store.mail(recipient, subject, body);
   } catch (e) {
     console.error('Email failed', e);
   }

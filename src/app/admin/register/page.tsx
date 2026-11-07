@@ -7,8 +7,8 @@ import PrintButton from '@/components/PrintButton';
 export const dynamic = 'force-dynamic';
 
 export default async function RegisterPage({ searchParams }: { searchParams: RegisterFilter }) {
-  requireAdmin();
-  const { rows, houses } = await registerRows(searchParams);
+  const admin = requireAdmin();
+  const { rows, houses } = await registerRows(admin, searchParams);
   const qs = new URLSearchParams(Object.entries(searchParams).filter(([, v]) => v) as [string, string][]).toString();
   const houseName = houses.find((h) => h.id === searchParams.house)?.name;
   const cols = REGISTER_COLUMNS.filter(([k]) => k !== 'passport_url');
@@ -21,7 +21,7 @@ export default async function RegisterPage({ searchParams }: { searchParams: Reg
           <label>
             <span className="label">House</span>
             <select name="house" defaultValue={searchParams.house ?? ''} className="input">
-              <option value="">All houses</option>
+              {houses.length > 1 && <option value="">All houses</option>}
               {houses.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
             </select>
           </label>
