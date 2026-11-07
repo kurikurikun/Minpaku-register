@@ -27,13 +27,13 @@ export function parseIcal(text: string, houseId: string): Reservation[] {
       const summary = ev.SUMMARY ?? '';
       const desc = (ev.DESCRIPTION ?? '').replace(/\\n/g, '\n');
       // Skip blocked / unavailable dates; keep real reservations.
-      if (!/not available|blocked|closed/i.test(summary)) {
+      if (!/not available|blocked|closed|利用不可|ブロック|予約不可/i.test(summary)) {
         out.push({
           house_id: houseId,
           check_in: toDate(ev.DTSTART ?? ''),
           check_out: toDate(ev.DTEND ?? ''),
           code: desc.match(/details\/([A-Z0-9]{6,})/)?.[1] ?? '',
-          phone_last4: desc.match(/Last 4 Digits\)?:?\s*(\d{4})/i)?.[1] ?? '',
+          phone_last4: desc.match(/(?:Last 4 Digits|下4桁|下四桁)[)）]?\s*[:：]?\s*(\d{4})/i)?.[1] ?? '',
         });
       }
       ev = null;
