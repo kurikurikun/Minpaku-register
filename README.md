@@ -52,6 +52,9 @@ In the Sheet's `Houses` tab (seeded with `shinagawa` and `hayama`):
 - `photo_url` — photo at the top of the guest page. Paste an `https://` image link
   (e.g. long-press a photo on your Airbnb listing → *Copy image address*), or a Google
   Drive link to a photo shared as *Anyone with the link*.
+- `ical_url` — the listing's Airbnb calendar export link (Airbnb → Listing → Availability →
+  Connect calendars → Connect to another website → copy the link). Upcoming reservations then
+  appear on the New booking form; tap one to fill in the dates and confirmation code.
 - `notify_email` — who gets the "check-in complete" email for that house
 - `address`, `license_no` (届出番号) — for your records
 

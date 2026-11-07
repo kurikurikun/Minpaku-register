@@ -3,6 +3,7 @@ import { canSee, requireAdmin } from '@/lib/auth';
 import { listBookings, listGuests, listHouses } from '@/lib/db';
 import AdminNav from '@/components/AdminNav';
 import NewBookingForm from '@/components/NewBookingForm';
+import { upcomingReservations } from '@/lib/ical';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,6 +11,8 @@ export default async function AdminHome({ searchParams }: { searchParams: { past
   const admin = requireAdmin();
   const [allHouses, bookings, guests] = await Promise.all([listHouses(), listBookings(), listGuests()]);
   const houses = allHouses.filter((h) => canSee(admin, h.id));
+  const { reservations, errors: calErrors } = await upcomingReservations(houses);
+  const linkedRefs = bookings.map((b) => b.booking_ref).filter(Boolean);
   const showPast = searchParams.past === '1';
   const today = new Date(Date.now() + 9 * 3600_000).toISOString().slice(0, 10); // JST
   const counts = new Map<string, number>();
@@ -25,7 +28,12 @@ export default async function AdminHome({ searchParams }: { searchParams: { past
     <>
       <AdminNav />
       <main className="mx-auto max-w-5xl space-y-6 px-4 py-6">
-        <NewBookingForm houses={houses} />
+        <NewBookingForm
+          houses={houses}
+          reservations={reservations}
+          linkedRefs={linkedRefs}
+          calErrors={calErrors.map((id) => houseName(id))}
+        />
 
         <section className="card">
           <div className="mb-3 flex items-center justify-between">

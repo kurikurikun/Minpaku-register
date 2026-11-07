@@ -7,7 +7,7 @@ import { store } from './store';
 // Edit the Houses tab directly in Google Sheets to rename houses, add houses,
 // or set who gets the "check-in complete" email for each house.
 const SCHEMA = {
-  Houses: ['id', 'name', 'photo_url', 'address', 'license_no', 'notify_email'],
+  Houses: ['id', 'name', 'photo_url', 'ical_url', 'address', 'license_no', 'notify_email'],
   Bookings: ['token', 'house_id', 'check_in', 'check_out', 'guests', 'lead_name', 'booking_ref', 'notes', 'created_by', 'created_at'],
   Guests: [
     'submitted_at', 'token', 'house_id', 'house_name', 'check_in', 'check_out', 'guest_no',
