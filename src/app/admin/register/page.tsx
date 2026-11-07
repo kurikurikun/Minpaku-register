@@ -40,12 +40,12 @@ export default async function RegisterPage({ searchParams }: { searchParams: Reg
           <p className="mb-3 text-sm text-neutral-600">
             {houseName ?? 'All houses'} · {searchParams.from || '…'} – {searchParams.to || '…'} · {rows.length} guests
           </p>
-          <div className="overflow-x-auto rounded-xl bg-white ring-1 ring-neutral-200">
+          <div className="glass overflow-x-auto rounded-3xl">
             <table className="w-full text-left text-xs">
-              <thead className="bg-neutral-50">
+              <thead className="bg-white/40">
                 <tr>{cols.map(([, label]) => <th key={label} className="px-2 py-2 font-semibold">{label}</th>)}</tr>
               </thead>
-              <tbody className="divide-y divide-neutral-100">
+              <tbody className="divide-y divide-black/5">
                 {rows.map((r, i) => (
                   <tr key={i} className="align-top">
                     {cols.map(([k]) => <td key={k} className="whitespace-pre-wrap px-2 py-1.5">{r[k]}</td>)}

@@ -128,7 +128,7 @@ export default function CheckinForm(props: {
   const langSelect = (
     <select
       aria-label="Language"
-      className="rounded-lg border border-neutral-300 bg-white/95 px-2 py-1.5 text-sm"
+      className="glass rounded-full px-3 py-1.5 text-sm outline-none"
       value={lang}
       onChange={(e) => setLang(e.target.value as Lang)}
     >
@@ -138,11 +138,19 @@ export default function CheckinForm(props: {
     </select>
   );
 
+  const backdrop = props.photoUrl ? (
+    <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={props.photoUrl} alt="" className="h-full w-full scale-125 object-cover opacity-50 blur-3xl grayscale" />
+    </div>
+  ) : null;
+
   if (status === 'done') {
     return (
       <main className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center p-6 text-center">
+        {backdrop}
         <div className="card">
-          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-sea-light text-3xl text-sea">✓</div>
+          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full glass-dark text-3xl text-white">✓</div>
           <h1 className="text-2xl font-semibold">{t.doneTitle}</h1>
           <p className="mt-2 text-neutral-600">{t.doneBody}</p>
         </div>
@@ -152,8 +160,9 @@ export default function CheckinForm(props: {
 
   return (
     <main className="mx-auto max-w-xl px-4 pb-16 pt-6">
+      {backdrop}
       {props.photoUrl ? (
-        <div className="relative -mx-4 -mt-6 mb-5 overflow-hidden sm:mx-0 sm:mt-0 sm:rounded-2xl">
+        <div className="relative -mx-4 -mt-6 mb-5 overflow-hidden sm:mx-0 sm:mt-0 sm:rounded-[1.75rem] sm:shadow-xl">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={props.photoUrl} alt={props.houseName} className="aspect-[4/3] w-full object-cover sm:aspect-[16/9]" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-black/20" />
@@ -188,7 +197,7 @@ export default function CheckinForm(props: {
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold">
                   {fmt(t.guestN, { n: no })}
-                  {isLead && <span className="ml-2 rounded-full bg-sea-light px-2 py-0.5 text-xs font-medium text-sea">{t.mainContact}</span>}
+                  {isLead && <span className="pill ml-2 align-middle">{t.mainContact}</span>}
                 </h2>
                 {g.saved && <span className="text-sm text-sea">✓ {t.saved}</span>}
               </div>
@@ -205,7 +214,7 @@ export default function CheckinForm(props: {
                       type="button"
                       key={v}
                       onClick={() => update(i, { livesInJapan: v })}
-                      className={`rounded-lg border px-3 py-2.5 font-medium ${g.livesInJapan === v ? 'border-sea bg-sea-light text-sea' : 'border-neutral-300 bg-white'}`}
+                      className={`seg ${g.livesInJapan === v ? 'seg-on' : ''}`}
                     >
                       {t[v]}
                     </button>
@@ -226,7 +235,7 @@ export default function CheckinForm(props: {
                     <p className="mb-2 text-xs text-neutral-500">{t.passportHint}</p>
                     {g.preview && (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={g.preview} alt="" className="mb-2 max-h-56 w-full rounded-lg object-contain ring-1 ring-neutral-200" />
+                      <img src={g.preview} alt="" className="mb-2 max-h-56 w-full rounded-2xl object-contain ring-1 ring-white/80" />
                     )}
                     <label className="btn-ghost w-full cursor-pointer">
                       📷 {g.preview ? t.changePhoto : t.choosePhoto}
@@ -266,7 +275,7 @@ export default function CheckinForm(props: {
           <span>{t.consent}</span>
         </label>
 
-        {error && <p className="rounded-lg border border-neutral-900 bg-white p-3 text-sm font-medium text-neutral-900">{error}</p>}
+        {error && <p className="glass rounded-2xl p-3 text-sm font-medium text-neutral-900">{error}</p>}
 
         <button type="submit" className="btn w-full py-3 text-lg" disabled={status === 'sending'}>
           {status === 'sending' ? progress : t.submit}

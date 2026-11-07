@@ -35,13 +35,13 @@ export default async function AdminHome({ searchParams }: { searchParams: { past
             </Link>
           </div>
           {list.length === 0 && <p className="text-neutral-500">No bookings.</p>}
-          <ul className="divide-y divide-neutral-100">
+          <ul className="divide-y divide-black/5">
             {list.map((b) => {
               const n = counts.get(b.token) ?? 0;
               const complete = n >= b.guests;
               return (
                 <li key={b.token}>
-                  <Link href={`/admin/b/${b.token}`} className="flex items-center gap-3 py-3 hover:bg-neutral-50">
+                  <Link href={`/admin/b/${b.token}`} className="-mx-2 flex items-center gap-3 rounded-2xl px-2 py-3 transition hover:bg-white/50">
                     <div className="w-28 shrink-0 text-sm">
                       <div className="font-semibold">{b.check_in}</div>
                       <div className="text-neutral-500">→ {b.check_out}</div>
@@ -50,7 +50,7 @@ export default async function AdminHome({ searchParams }: { searchParams: { past
                       <div className="truncate font-medium">{b.lead_name || b.booking_ref || 'Booking'}</div>
                       <div className="truncate text-sm text-neutral-500">{houseName(b.house_id)}</div>
                     </div>
-                    <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${complete ? 'bg-neutral-900 text-white' : 'bg-neutral-200 text-neutral-700'}`}>
+                    <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${complete ? 'glass-dark text-white' : 'glass text-neutral-700'}`}>
                       {n}/{b.guests} {complete ? '✓' : ''}
                     </span>
                   </Link>

@@ -24,7 +24,7 @@ export default async function BookingPage({ params, searchParams }: { params: { 
     <>
       <AdminNav />
       <main className="mx-auto max-w-5xl space-y-6 overflow-hidden px-4 py-6">
-        {searchParams.new && <p className="rounded-lg border border-neutral-300 bg-white p-3 text-neutral-900">Booking created. Send the link below to your guest.</p>}
+        {searchParams.new && <p className="glass rounded-2xl p-3 text-neutral-900">Booking created. Send the link below to your guest.</p>}
 
         <section className="card space-y-1">
           <h1 className="text-xl font-semibold">{houseName}</h1>
@@ -37,7 +37,7 @@ export default async function BookingPage({ params, searchParams }: { params: { 
         <section className="card space-y-4">
           <h2 className="text-lg font-semibold">Check-in link</h2>
           <div className="flex items-center gap-2">
-            <code className="min-w-0 flex-1 truncate rounded bg-neutral-100 px-2 py-1.5 text-sm">{link}</code>
+            <code className="min-w-0 flex-1 truncate rounded-xl bg-white/50 px-3 py-2 text-sm ring-1 ring-white/80">{link}</code>
             <CopyButton text={link} />
           </div>
           {[['Message (English)', msgEn], ['メッセージ（日本語）', msgJa]].map(([label, msg]) => (
@@ -46,7 +46,7 @@ export default async function BookingPage({ params, searchParams }: { params: { 
                 <span className="label mb-0">{label}</span>
                 <CopyButton text={msg} />
               </div>
-              <pre className="whitespace-pre-wrap break-all rounded bg-neutral-50 p-3 text-sm text-neutral-700">{msg}</pre>
+              <pre className="whitespace-pre-wrap break-all rounded-2xl bg-white/45 p-3 text-sm text-neutral-700 ring-1 ring-white/80">{msg}</pre>
             </div>
           ))}
         </section>
@@ -56,7 +56,7 @@ export default async function BookingPage({ params, searchParams }: { params: { 
           {guests.length === 0 && <p className="text-neutral-500">Nobody has registered yet.</p>}
           <div className="space-y-4">
             {guests.map((g, i) => (
-              <div key={i} className="flex flex-col gap-4 rounded-xl border border-neutral-200 p-4 sm:flex-row">
+              <div key={i} className="flex flex-col gap-4 rounded-3xl bg-white/40 p-4 ring-1 ring-white/80 sm:flex-row">
                 <dl className="grid flex-1 grid-cols-[8rem_1fr] gap-x-3 gap-y-1 text-sm">
                   <dt className="text-neutral-500">Name</dt><dd className="font-semibold">{g.full_name}</dd>
                   <dt className="text-neutral-500">Lives in Japan</dt><dd>{g.lives_in_japan}</dd>
@@ -71,7 +71,7 @@ export default async function BookingPage({ params, searchParams }: { params: { 
                 {g.passport_file_id && (
                   <a href={g.passport_url} target="_blank" rel="noreferrer" className="shrink-0">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={`/api/admin/photo/${g.passport_file_id}`} alt="Passport" className="h-40 w-full rounded-lg object-contain ring-1 ring-neutral-200 sm:w-60" />
+                    <img src={`/api/admin/photo/${g.passport_file_id}`} alt="Passport" className="h-40 w-full rounded-2xl object-contain ring-1 ring-white/80 sm:w-60" />
                   </a>
                 )}
               </div>

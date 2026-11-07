@@ -2,14 +2,59 @@
 @tailwind components;
 @tailwind utilities;
 
-body { @apply bg-sand text-ink antialiased; }
-.input { @apply w-full rounded-lg border border-neutral-300 bg-white px-3 py-2.5 text-base outline-none focus:border-sea focus:ring-2 focus:ring-sea/20; }
-.label { @apply mb-1 block text-sm font-medium text-neutral-700; }
-.btn { @apply inline-flex items-center justify-center rounded-lg bg-sea px-4 py-2.5 font-semibold text-white hover:bg-sea-dark disabled:opacity-50; }
-.btn-ghost { @apply inline-flex items-center justify-center rounded-lg border border-neutral-300 bg-white px-4 py-2.5 font-medium hover:bg-neutral-50; }
-.card { @apply rounded-2xl bg-white p-5 shadow-sm ring-1 ring-neutral-200; }
+/* Liquid Glass, monochrome: translucent frosted surfaces over a soft grey backdrop. */
+body {
+  @apply text-ink antialiased;
+  background-color: #e9e9ea;
+  background-image:
+    radial-gradient(60rem 40rem at 10% -10%, #ffffff 0%, transparent 60%),
+    radial-gradient(50rem 35rem at 110% 20%, #d4d4d6 0%, transparent 60%),
+    radial-gradient(45rem 35rem at 30% 110%, #c9c9cc 0%, transparent 60%);
+  background-attachment: fixed;
+}
+
+@layer components {
+  .glass {
+    background: rgba(255, 255, 255, 0.55);
+    -webkit-backdrop-filter: blur(24px) saturate(160%);
+    backdrop-filter: blur(24px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.75);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.9),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.04),
+      0 10px 30px -10px rgba(0, 0, 0, 0.18),
+      0 2px 6px rgba(0, 0, 0, 0.04);
+  }
+  .glass-dark {
+    background: rgba(17, 17, 17, 0.82);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    backdrop-filter: blur(20px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.22),
+      0 10px 24px -8px rgba(0, 0, 0, 0.45);
+  }
+
+  .card { @apply glass rounded-[1.75rem] p-5; }
+  .input {
+    @apply w-full rounded-2xl px-4 py-3 text-base outline-none transition;
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.85);
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06), 0 1px 0 rgba(255, 255, 255, 0.6);
+  }
+  .input:focus { background: rgba(255, 255, 255, 0.85); box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06), 0 0 0 4px rgba(17, 17, 17, 0.12); }
+  .label { @apply mb-1.5 block text-sm font-medium text-neutral-700; }
+  .btn { @apply glass-dark inline-flex items-center justify-center rounded-full px-5 py-3 font-semibold text-white transition active:scale-[0.98] disabled:opacity-50; }
+  .btn:hover { background: rgba(0, 0, 0, 0.9); }
+  .btn-ghost { @apply glass inline-flex items-center justify-center rounded-full px-5 py-3 font-medium transition active:scale-[0.98]; }
+  .btn-ghost:hover { background: rgba(255, 255, 255, 0.75); }
+  .pill { @apply glass rounded-full px-2.5 py-0.5 text-xs font-medium; }
+  .seg { @apply rounded-2xl px-3 py-3 font-medium transition; background: rgba(255, 255, 255, 0.45); border: 1px solid rgba(255, 255, 255, 0.7); }
+  .seg-on { @apply glass-dark text-white; }
+}
 
 @media print {
   .no-print { display: none !important; }
   body { background: white; }
+  .glass, .card { background: white; box-shadow: none; border-color: #ddd; backdrop-filter: none; }
 }
