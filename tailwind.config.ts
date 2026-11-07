@@ -1,9 +1,15 @@
 import type { Config } from 'tailwindcss';
+
+// Monochrome palette: white, greys, black.
 export default {
   content: ['./src/**/*.{ts,tsx}'],
   theme: {
     extend: {
-      colors: { ink: '#1f2a2e', sea: { DEFAULT: '#2f6f73', dark: '#245659', light: '#e6f0f0' }, sand: '#f7f4ee' },
+      colors: {
+        ink: '#111111',
+        sea: { DEFAULT: '#111111', dark: '#000000', light: '#f0f0f0' },
+        sand: '#f7f7f7',
+      },
     },
   },
   plugins: [],

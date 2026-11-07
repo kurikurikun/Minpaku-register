@@ -59,6 +59,7 @@ export default function CheckinForm(props: {
   token: string;
   initialLang: Lang;
   houseName: string;
+  photoUrl?: string;
   checkIn: string;
   checkOut: string;
   totalGuests: number;
@@ -124,13 +125,26 @@ export default function CheckinForm(props: {
     }
   }
 
+  const langSelect = (
+    <select
+      aria-label="Language"
+      className="rounded-lg border border-neutral-300 bg-white/95 px-2 py-1.5 text-sm"
+      value={lang}
+      onChange={(e) => setLang(e.target.value as Lang)}
+    >
+      {LANGS.map((l) => (
+        <option key={l.code} value={l.code}>{l.label}</option>
+      ))}
+    </select>
+  );
+
   if (status === 'done') {
     return (
       <main className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center p-6 text-center">
         <div className="card">
           <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-sea-light text-3xl text-sea">✓</div>
           <h1 className="text-2xl font-semibold">{t.doneTitle}</h1>
-          <p className="mt-2 text-stone-600">{t.doneBody}</p>
+          <p className="mt-2 text-neutral-600">{t.doneBody}</p>
         </div>
       </main>
     );
@@ -138,27 +152,30 @@ export default function CheckinForm(props: {
 
   return (
     <main className="mx-auto max-w-xl px-4 pb-16 pt-6">
-      <div className="mb-4 flex justify-end">
-        <select
-          aria-label="Language"
-          className="rounded-lg border border-stone-300 bg-white px-2 py-1.5 text-sm"
-          value={lang}
-          onChange={(e) => setLang(e.target.value as Lang)}
-        >
-          {LANGS.map((l) => (
-            <option key={l.code} value={l.code}>{l.label}</option>
-          ))}
-        </select>
-      </div>
-
-      <h1 className="text-2xl font-semibold">{t.title}</h1>
-      <p className="mt-1 text-lg text-sea">{props.houseName}</p>
-      <p className="mt-3 text-sm leading-relaxed text-stone-600">{t.intro}</p>
+      {props.photoUrl ? (
+        <div className="relative -mx-4 -mt-6 mb-5 overflow-hidden sm:mx-0 sm:mt-0 sm:rounded-2xl">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={props.photoUrl} alt={props.houseName} className="aspect-[4/3] w-full object-cover sm:aspect-[16/9]" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-black/20" />
+          <div className="absolute right-3 top-3">{langSelect}</div>
+          <div className="absolute inset-x-0 bottom-0 p-5 text-white">
+            <p className="text-xs font-medium uppercase tracking-[0.2em] text-white/80">{t.title}</p>
+            <h1 className="mt-1 text-3xl font-semibold leading-tight">{props.houseName}</h1>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="mb-4 flex justify-end">{langSelect}</div>
+          <h1 className="text-2xl font-semibold">{t.title}</h1>
+          <p className="mt-1 text-lg text-neutral-500">{props.houseName}</p>
+        </>
+      )}
+      <p className="mt-3 text-sm leading-relaxed text-neutral-600">{t.intro}</p>
 
       <div className="card mt-5 grid grid-cols-3 gap-2 text-center text-sm">
-        <div><div className="text-stone-500">{t.checkIn}</div><div className="font-semibold">{props.checkIn}</div></div>
-        <div><div className="text-stone-500">{t.checkOut}</div><div className="font-semibold">{props.checkOut}</div></div>
-        <div><div className="text-stone-500">{t.guests}</div><div className="font-semibold">{props.totalGuests}</div></div>
+        <div><div className="text-neutral-500">{t.checkIn}</div><div className="font-semibold">{props.checkIn}</div></div>
+        <div><div className="text-neutral-500">{t.checkOut}</div><div className="font-semibold">{props.checkOut}</div></div>
+        <div><div className="text-neutral-500">{t.guests}</div><div className="font-semibold">{props.totalGuests}</div></div>
       </div>
 
       <form onSubmit={submit} className="mt-6 space-y-5" noValidate>
@@ -188,7 +205,7 @@ export default function CheckinForm(props: {
                       type="button"
                       key={v}
                       onClick={() => update(i, { livesInJapan: v })}
-                      className={`rounded-lg border px-3 py-2.5 font-medium ${g.livesInJapan === v ? 'border-sea bg-sea-light text-sea' : 'border-stone-300 bg-white'}`}
+                      className={`rounded-lg border px-3 py-2.5 font-medium ${g.livesInJapan === v ? 'border-sea bg-sea-light text-sea' : 'border-neutral-300 bg-white'}`}
                     >
                       {t[v]}
                     </button>
@@ -206,10 +223,10 @@ export default function CheckinForm(props: {
                   </Field>
                   <div>
                     <span className="label">{t.passportPhoto} *</span>
-                    <p className="mb-2 text-xs text-stone-500">{t.passportHint}</p>
+                    <p className="mb-2 text-xs text-neutral-500">{t.passportHint}</p>
                     {g.preview && (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={g.preview} alt="" className="mb-2 max-h-56 w-full rounded-lg object-contain ring-1 ring-stone-200" />
+                      <img src={g.preview} alt="" className="mb-2 max-h-56 w-full rounded-lg object-contain ring-1 ring-neutral-200" />
                     )}
                     <label className="btn-ghost w-full cursor-pointer">
                       📷 {g.preview ? t.changePhoto : t.choosePhoto}
@@ -249,7 +266,7 @@ export default function CheckinForm(props: {
           <span>{t.consent}</span>
         </label>
 
-        {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+        {error && <p className="rounded-lg border border-neutral-900 bg-white p-3 text-sm font-medium text-neutral-900">{error}</p>}
 
         <button type="submit" className="btn w-full py-3 text-lg" disabled={status === 'sending'}>
           {status === 'sending' ? progress : t.submit}

@@ -7,7 +7,7 @@ import { store } from './store';
 // Edit the Houses tab directly in Google Sheets to rename houses, add houses,
 // or set who gets the "check-in complete" email for each house.
 const SCHEMA = {
-  Houses: ['id', 'name', 'address', 'license_no', 'notify_email'],
+  Houses: ['id', 'name', 'photo_url', 'address', 'license_no', 'notify_email'],
   Bookings: ['token', 'house_id', 'check_in', 'check_out', 'guests', 'lead_name', 'booking_ref', 'notes', 'created_by', 'created_at'],
   Guests: [
     'submitted_at', 'token', 'house_id', 'house_name', 'check_in', 'check_out', 'guest_no',
@@ -49,6 +49,16 @@ const snapshot = cache(async () => {
     guests: shape('Guests', d.Guests ?? []),
   };
 });
+
+// Accepts a file path in /public, a direct https image link, or a Google Drive share link (file must be shared
+// "Anyone with the link"), which is converted to an embeddable image URL.
+export function housePhoto(h?: House) {
+  const url = h?.photo_url?.trim() ?? '';
+  if (/^\/[\w/.-]+$/.test(url)) return url; // file in /public, e.g. /houses/hayama.jpg
+  if (!/^https:\/\//i.test(url)) return undefined;
+  const drive = url.match(/drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:export=\w+&)?id=)([\w-]{10,})/);
+  return drive ? `https://lh3.googleusercontent.com/d/${drive[1]}=w1600` : url;
+}
 
 export async function listHouses(): Promise<House[]> {
   return (await snapshot()).houses;

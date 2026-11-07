@@ -49,6 +49,9 @@ The Sheet's tabs are created on the first page load.
 ### 3. Houses
 In the Sheet's `Houses` tab (seeded with `shinagawa` and `hayama`):
 - `name` — shown to guests
+- `photo_url` — photo at the top of the guest page. Paste an `https://` image link
+  (e.g. long-press a photo on your Airbnb listing → *Copy image address*), or a Google
+  Drive link to a photo shared as *Anyone with the link*.
 - `notify_email` — who gets the "check-in complete" email for that house
 - `address`, `license_no` (届出番号) — for your records
 

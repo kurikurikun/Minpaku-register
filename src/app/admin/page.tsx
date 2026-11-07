@@ -34,23 +34,23 @@ export default async function AdminHome({ searchParams }: { searchParams: { past
               {showPast ? 'Show upcoming' : 'Show past'}
             </Link>
           </div>
-          {list.length === 0 && <p className="text-stone-500">No bookings.</p>}
-          <ul className="divide-y divide-stone-100">
+          {list.length === 0 && <p className="text-neutral-500">No bookings.</p>}
+          <ul className="divide-y divide-neutral-100">
             {list.map((b) => {
               const n = counts.get(b.token) ?? 0;
               const complete = n >= b.guests;
               return (
                 <li key={b.token}>
-                  <Link href={`/admin/b/${b.token}`} className="flex items-center gap-3 py-3 hover:bg-stone-50">
+                  <Link href={`/admin/b/${b.token}`} className="flex items-center gap-3 py-3 hover:bg-neutral-50">
                     <div className="w-28 shrink-0 text-sm">
                       <div className="font-semibold">{b.check_in}</div>
-                      <div className="text-stone-500">→ {b.check_out}</div>
+                      <div className="text-neutral-500">→ {b.check_out}</div>
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="truncate font-medium">{b.lead_name || b.booking_ref || 'Booking'}</div>
-                      <div className="truncate text-sm text-stone-500">{houseName(b.house_id)}</div>
+                      <div className="truncate text-sm text-neutral-500">{houseName(b.house_id)}</div>
                     </div>
-                    <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${complete ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+                    <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${complete ? 'bg-neutral-900 text-white' : 'bg-neutral-200 text-neutral-700'}`}>
                       {n}/{b.guests} {complete ? '✓' : ''}
                     </span>
                   </Link>

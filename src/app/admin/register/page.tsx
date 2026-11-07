@@ -37,15 +37,15 @@ export default async function RegisterPage({ searchParams }: { searchParams: Reg
 
         <section>
           <h1 className="text-xl font-semibold">宿泊者名簿 Guest Register</h1>
-          <p className="mb-3 text-sm text-stone-600">
+          <p className="mb-3 text-sm text-neutral-600">
             {houseName ?? 'All houses'} · {searchParams.from || '…'} – {searchParams.to || '…'} · {rows.length} guests
           </p>
-          <div className="overflow-x-auto rounded-xl bg-white ring-1 ring-stone-200">
+          <div className="overflow-x-auto rounded-xl bg-white ring-1 ring-neutral-200">
             <table className="w-full text-left text-xs">
-              <thead className="bg-stone-50">
+              <thead className="bg-neutral-50">
                 <tr>{cols.map(([, label]) => <th key={label} className="px-2 py-2 font-semibold">{label}</th>)}</tr>
               </thead>
-              <tbody className="divide-y divide-stone-100">
+              <tbody className="divide-y divide-neutral-100">
                 {rows.map((r, i) => (
                   <tr key={i} className="align-top">
                     {cols.map(([k]) => <td key={k} className="whitespace-pre-wrap px-2 py-1.5">{r[k]}</td>)}

@@ -24,20 +24,20 @@ export default async function BookingPage({ params, searchParams }: { params: { 
     <>
       <AdminNav />
       <main className="mx-auto max-w-5xl space-y-6 overflow-hidden px-4 py-6">
-        {searchParams.new && <p className="rounded-lg bg-emerald-50 p-3 text-emerald-800">Booking created. Send the link below to your guest.</p>}
+        {searchParams.new && <p className="rounded-lg border border-neutral-300 bg-white p-3 text-neutral-900">Booking created. Send the link below to your guest.</p>}
 
         <section className="card space-y-1">
           <h1 className="text-xl font-semibold">{houseName}</h1>
           <p>{booking.check_in} → {booking.check_out} · {booking.guests} {booking.guests === 1 ? 'guest' : 'guests'}</p>
-          {booking.lead_name && <p className="text-stone-600">Lead: {booking.lead_name}</p>}
-          {booking.booking_ref && <p className="text-stone-600">Ref: {booking.booking_ref}</p>}
-          {booking.notes && <p className="text-stone-600">Notes: {booking.notes}</p>}
+          {booking.lead_name && <p className="text-neutral-600">Lead: {booking.lead_name}</p>}
+          {booking.booking_ref && <p className="text-neutral-600">Ref: {booking.booking_ref}</p>}
+          {booking.notes && <p className="text-neutral-600">Notes: {booking.notes}</p>}
         </section>
 
         <section className="card space-y-4">
           <h2 className="text-lg font-semibold">Check-in link</h2>
           <div className="flex items-center gap-2">
-            <code className="min-w-0 flex-1 truncate rounded bg-stone-100 px-2 py-1.5 text-sm">{link}</code>
+            <code className="min-w-0 flex-1 truncate rounded bg-neutral-100 px-2 py-1.5 text-sm">{link}</code>
             <CopyButton text={link} />
           </div>
           {[['Message (English)', msgEn], ['メッセージ（日本語）', msgJa]].map(([label, msg]) => (
@@ -46,32 +46,32 @@ export default async function BookingPage({ params, searchParams }: { params: { 
                 <span className="label mb-0">{label}</span>
                 <CopyButton text={msg} />
               </div>
-              <pre className="whitespace-pre-wrap break-all rounded bg-stone-50 p-3 text-sm text-stone-700">{msg}</pre>
+              <pre className="whitespace-pre-wrap break-all rounded bg-neutral-50 p-3 text-sm text-neutral-700">{msg}</pre>
             </div>
           ))}
         </section>
 
         <section className="card">
           <h2 className="mb-3 text-lg font-semibold">Guests ({guests.length}/{booking.guests})</h2>
-          {guests.length === 0 && <p className="text-stone-500">Nobody has registered yet.</p>}
+          {guests.length === 0 && <p className="text-neutral-500">Nobody has registered yet.</p>}
           <div className="space-y-4">
             {guests.map((g, i) => (
-              <div key={i} className="flex flex-col gap-4 rounded-xl border border-stone-200 p-4 sm:flex-row">
+              <div key={i} className="flex flex-col gap-4 rounded-xl border border-neutral-200 p-4 sm:flex-row">
                 <dl className="grid flex-1 grid-cols-[8rem_1fr] gap-x-3 gap-y-1 text-sm">
-                  <dt className="text-stone-500">Name</dt><dd className="font-semibold">{g.full_name}</dd>
-                  <dt className="text-stone-500">Lives in Japan</dt><dd>{g.lives_in_japan}</dd>
-                  {g.nationality && <><dt className="text-stone-500">Nationality</dt><dd>{g.nationality}</dd></>}
-                  {g.passport_no && <><dt className="text-stone-500">Passport no.</dt><dd>{g.passport_no}</dd></>}
-                  <dt className="text-stone-500">Address</dt><dd className="whitespace-pre-wrap">{g.address}</dd>
-                  <dt className="text-stone-500">Occupation</dt><dd>{g.occupation}</dd>
-                  {g.phone && <><dt className="text-stone-500">Phone</dt><dd>{g.phone}</dd></>}
-                  {g.email && <><dt className="text-stone-500">Email</dt><dd>{g.email}</dd></>}
-                  <dt className="text-stone-500">Submitted</dt><dd>{new Date(g.submitted_at).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })} JST</dd>
+                  <dt className="text-neutral-500">Name</dt><dd className="font-semibold">{g.full_name}</dd>
+                  <dt className="text-neutral-500">Lives in Japan</dt><dd>{g.lives_in_japan}</dd>
+                  {g.nationality && <><dt className="text-neutral-500">Nationality</dt><dd>{g.nationality}</dd></>}
+                  {g.passport_no && <><dt className="text-neutral-500">Passport no.</dt><dd>{g.passport_no}</dd></>}
+                  <dt className="text-neutral-500">Address</dt><dd className="whitespace-pre-wrap">{g.address}</dd>
+                  <dt className="text-neutral-500">Occupation</dt><dd>{g.occupation}</dd>
+                  {g.phone && <><dt className="text-neutral-500">Phone</dt><dd>{g.phone}</dd></>}
+                  {g.email && <><dt className="text-neutral-500">Email</dt><dd>{g.email}</dd></>}
+                  <dt className="text-neutral-500">Submitted</dt><dd>{new Date(g.submitted_at).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })} JST</dd>
                 </dl>
                 {g.passport_file_id && (
                   <a href={g.passport_url} target="_blank" rel="noreferrer" className="shrink-0">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={`/api/admin/photo/${g.passport_file_id}`} alt="Passport" className="h-40 w-full rounded-lg object-contain ring-1 ring-stone-200 sm:w-60" />
+                    <img src={`/api/admin/photo/${g.passport_file_id}`} alt="Passport" className="h-40 w-full rounded-lg object-contain ring-1 ring-neutral-200 sm:w-60" />
                   </a>
                 )}
               </div>

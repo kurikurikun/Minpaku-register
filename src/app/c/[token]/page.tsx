@@ -1,6 +1,6 @@
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
-import { getBooking, guestsForBooking, isExpired, listHouses } from '@/lib/db';
+import { getBooking, guestsForBooking, housePhoto, isExpired, listHouses } from '@/lib/db';
 import { DICTS, LANGS, type Lang } from '@/lib/i18n';
 import CheckinForm from '@/components/CheckinForm';
 
@@ -33,6 +33,7 @@ export default async function CheckinPage({ params }: { params: { token: string 
       token={booking.token}
       initialLang={lang}
       houseName={house?.name ?? booking.house_id}
+      photoUrl={housePhoto(house)}
       checkIn={booking.check_in}
       checkOut={booking.check_out}
       totalGuests={booking.guests}

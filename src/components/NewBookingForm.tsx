@@ -26,7 +26,7 @@ export default function NewBookingForm({ houses }: { houses: House[] }) {
       <label><span className="label">Lead guest name</span><input name="lead_name" className="input" placeholder="optional" /></label>
       <label><span className="label">Booking ref (Airbnb code etc.)</span><input name="booking_ref" className="input" placeholder="optional" /></label>
       <label><span className="label">Notes</span><input name="notes" className="input" placeholder="optional" /></label>
-      {error && <p className="text-sm text-red-600 sm:col-span-2">{error}</p>}
+      {error && <p className="text-sm font-medium text-neutral-900 sm:col-span-2">{error}</p>}
       <div className="sm:col-span-2"><Submit /></div>
     </form>
   );
