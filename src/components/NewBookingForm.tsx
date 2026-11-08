@@ -27,7 +27,14 @@ export default function NewBookingForm(props: {
   const [f, setF] = useState({ house_id: props.houses[0]?.id ?? '', check_in: '', check_out: '', booking_ref: '', notes: '' });
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setF({ ...f, [k]: e.target.value });
   const houseName = (id: string) => props.houses.find((h) => h.id === id)?.name ?? id;
-  const multi = props.houses.length > 1;
+  const houseRes = props.reservations.filter((r) => r.house_id === f.house_id);
+  const calError = props.calErrors.includes(f.house_id);
+
+  // Switching house clears anything filled in from the other house's reservation.
+  function changeHouse(id: string) {
+    const fromOther = props.reservations.some((r) => r.house_id !== id && r.code && r.code === f.booking_ref);
+    setF(fromOther ? { house_id: id, check_in: '', check_out: '', booking_ref: '', notes: '' } : { ...f, house_id: id });
+  }
 
   function pick(r: Reservation) {
     setF({
@@ -44,11 +51,18 @@ export default function NewBookingForm(props: {
     <form action={action} className="card grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2">
       <h2 className="text-lg font-semibold sm:col-span-2">New booking</h2>
 
-      {(props.reservations.length > 0 || props.calErrors.length > 0) && (
+      <label className="sm:col-span-2">
+        <span className="label">House</span>
+        <select name="house_id" className="input" required value={f.house_id} onChange={(e) => changeHouse(e.target.value)}>
+          {props.houses.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
+        </select>
+      </label>
+
+      {(houseRes.length > 0 || calError) && (
         <div className="min-w-0 sm:col-span-2">
-          <span className="label">From Airbnb calendar — tap to fill in</span>
+          <span className="label">Airbnb reservations — tap to fill in</span>
           <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
-            {props.reservations.map((r) => {
+            {houseRes.map((r) => {
               const linked = !!r.code && props.linkedRefs.includes(r.code);
               const active = f.booking_ref === r.code && f.check_in === r.check_in && f.house_id === r.house_id;
               return (
@@ -62,7 +76,6 @@ export default function NewBookingForm(props: {
                     {short(r.check_in)} → {short(r.check_out)} <span className="font-normal opacity-70">· {nights(r.check_in, r.check_out)}n</span>
                   </div>
                   <div className="mt-0.5 text-xs opacity-70">
-                    {multi && <>{houseName(r.house_id)} · </>}
                     {r.code || 'No code'}
                     {r.phone_last4 && <> · Tel …{r.phone_last4}</>}
                     {linked && <> · link sent</>}
@@ -71,18 +84,12 @@ export default function NewBookingForm(props: {
               );
             })}
           </div>
-          {props.calErrors.length > 0 && (
-            <p className="mt-1 text-xs text-neutral-500">Couldn&apos;t load the calendar for {props.calErrors.join(', ')}. Check its ical_url in the Houses tab.</p>
+          {calError && (
+            <p className="mt-1 text-xs text-neutral-500">Couldn&apos;t load the Airbnb calendar for {houseName(f.house_id)}. Check its ical_url in the Houses tab.</p>
           )}
         </div>
       )}
 
-      <label className="sm:col-span-2">
-        <span className="label">House</span>
-        <select name="house_id" className="input" required value={f.house_id} onChange={set('house_id')}>
-          {props.houses.map((h) => <option key={h.id} value={h.id}>{h.name}</option>)}
-        </select>
-      </label>
       <label><span className="label">Check-in</span><input name="check_in" type="date" className="input" required value={f.check_in} onChange={set('check_in')} /></label>
       <label><span className="label">Check-out</span><input name="check_out" type="date" className="input" required value={f.check_out} onChange={set('check_out')} /></label>
       <label><span className="label">Number of guests</span><input id="guests" name="guests" type="number" min={1} max={30} defaultValue={2} className="input" required /></label>

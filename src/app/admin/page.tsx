@@ -32,7 +32,7 @@ export default async function AdminHome({ searchParams }: { searchParams: { past
           houses={houses}
           reservations={reservations}
           linkedRefs={linkedRefs}
-          calErrors={calErrors.map((id) => houseName(id))}
+          calErrors={calErrors}
         />
 
         <section className="card">

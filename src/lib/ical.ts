@@ -55,9 +55,13 @@ export async function upcomingReservations(houses: { id: string; ical_url: strin
       .map(async (h) => {
         try {
           const res = await fetch(h.ical_url, { next: { revalidate: 600 }, headers: { 'User-Agent': 'minpaku-register' } });
-          if (!res.ok) throw new Error(String(res.status));
-          return parseIcal(await res.text(), h.id);
-        } catch {
+          const body = await res.text();
+          if (!res.ok) throw new Error(`HTTP ${res.status}: ${body.slice(0, 120)}`);
+          if (!body.includes('BEGIN:VCALENDAR')) throw new Error(`Not a calendar: ${body.slice(0, 120)}`);
+          return parseIcal(body, h.id);
+        } catch (e) {
+          // Log without the secret token part of the link.
+          console.error(`Calendar load failed for ${h.id} (${h.ical_url.split('?')[0]}):`, e instanceof Error ? e.message : e);
           errors.push(h.id);
           return [];
         }
