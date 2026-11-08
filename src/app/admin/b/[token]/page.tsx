@@ -15,6 +15,7 @@ export default async function BookingPage({ params, searchParams }: { params: { 
   const house = houses.find((h) => h.id === booking.house_id);
   const houseName = house?.name ?? booking.house_id;
   const link = `${baseUrl()}/c/${booking.token}`;
+  const lead = booking.lead_name || guests.find((g) => g.guest_no === '1')?.full_name || guests[0]?.full_name || '';
   const hi = booking.lead_name ? ` ${booking.lead_name}` : '';
 
   const msgEn = `Hi${hi}! Thanks for booking ${houseName}. Japanese law requires us to register every guest before arrival (name, address, occupation, and a passport photo for guests living outside Japan). It only takes a few minutes — please complete it for all ${booking.guests} guests here:\n${link}`;
@@ -29,7 +30,7 @@ export default async function BookingPage({ params, searchParams }: { params: { 
         <section className="card space-y-1">
           <h1 className="text-xl font-semibold">{houseName}</h1>
           <p>{booking.check_in} → {booking.check_out} · {booking.guests} {booking.guests === 1 ? 'guest' : 'guests'}</p>
-          {booking.lead_name && <p className="text-neutral-600">Lead: {booking.lead_name}</p>}
+          {lead && <p className="text-neutral-600">Lead: {lead}</p>}
           {booking.booking_ref && <p className="text-neutral-600">Ref: {booking.booking_ref}</p>}
           {booking.notes && <p className="text-neutral-600">Notes: {booking.notes}</p>}
         </section>

@@ -16,7 +16,12 @@ export default async function AdminHome({ searchParams }: { searchParams: { past
   const showPast = searchParams.past === '1';
   const today = new Date(Date.now() + 9 * 3600_000).toISOString().slice(0, 10); // JST
   const counts = new Map<string, number>();
-  for (const g of guests) counts.set(g.token, (counts.get(g.token) ?? 0) + 1);
+  // Main contact's name from the registration, used when no lead name was typed in.
+  const leadFromGuests = new Map<string, string>();
+  for (const g of guests) {
+    counts.set(g.token, (counts.get(g.token) ?? 0) + 1);
+    if (g.guest_no === '1' || !leadFromGuests.has(g.token)) leadFromGuests.set(g.token, g.full_name);
+  }
   const houseName = (id: string) => houses.find((h) => h.id === id)?.name ?? id;
 
   const list = bookings
@@ -55,7 +60,8 @@ export default async function AdminHome({ searchParams }: { searchParams: { past
                       <div className="text-neutral-500">→ {b.check_out}</div>
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="truncate font-medium">{b.lead_name || b.booking_ref || 'Booking'}</div>
+                      <div className="truncate font-medium">{b.lead_name || leadFromGuests.get(b.token) || b.booking_ref || 'Booking'}</div>
+                      {!b.lead_name && leadFromGuests.has(b.token) && b.booking_ref && <div className="truncate text-xs text-neutral-500">{b.booking_ref}</div>}
                       <div className="truncate text-sm text-neutral-500">{houseName(b.house_id)}</div>
                     </div>
                     <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${complete ? 'glass-dark text-white' : 'glass text-neutral-700'}`}>
