@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from 'react';
 import { importStays, type UploadRow } from '@/app/admin/income/actions';
 
-type Field = 'type' | 'code' | 'start' | 'end' | 'nights' | 'guest' | 'listing' | 'amount' | 'currency';
+type Field = 'type' | 'code' | 'start' | 'end' | 'nights' | 'guest' | 'listing' | 'amount' | 'currency' | 'adults' | 'children' | 'infants';
 const FIELDS: { key: Field; label: string; required?: boolean; match: RegExp }[] = [
   { key: 'code', label: 'Confirmation code', required: true, match: /confirmation|確認コード|予約コード/i },
   { key: 'start', label: 'Check-in date', required: true, match: /^start|開始日|チェックイン/i },
@@ -14,6 +14,9 @@ const FIELDS: { key: Field; label: string; required?: boolean; match: RegExp }[]
   { key: 'listing', label: 'Listing', match: /listing|リスティング/i },
   { key: 'type', label: 'Type', match: /^type$|種類|種別|タイプ/i },
   { key: 'currency', label: 'Currency', match: /^currency$|^通貨$/i },
+  { key: 'adults', label: 'Adults', match: /^adults?$|^大人$/i },
+  { key: 'children', label: 'Children', match: /^child(ren)?$|^子ども$|^子供$/i },
+  { key: 'infants', label: 'Infants', match: /^infants?$|^乳幼児$/i },
 ];
 
 function parseCsv(text: string): string[][] {
@@ -92,7 +95,7 @@ export default function CsvImport(props: { houses: { id: string; name: string }[
   // Reservation rows, combined per confirmation code (Airbnb can split one stay across lines).
   const stays = useMemo(() => {
     if (!table || missing.length) return [];
-    const by = new Map<string, UploadRow & { listing: string }>();
+    const by = new Map<string, UploadRow & { listing: string; currency: string }>();
     for (const r of body) {
       const type = get(r, 'type');
       if (type && (!/reserv|予約/i.test(type) || /payout|入金|振込|支払い/i.test(type))) continue;
@@ -112,7 +115,10 @@ export default function CsvImport(props: { houses: { id: string; name: string }[
         nights, guest: get(r, 'guest'), amount: String(amount),
         // Airbnb's own occupancy-tax column isn't the prefecture tax the host pays; that is worked out on the Income page.
         occupancy_tax: '',
-        people: '', listing: get(r, 'listing'),
+        // Guest count from Airbnb (adults + children + infants), if the file has it.
+        people: map.adults !== undefined ? String(money(get(r, 'adults')) + money(get(r, 'children')) + money(get(r, 'infants')) || '') : '',
+        listing: get(r, 'listing'),
+        currency: get(r, 'currency').toUpperCase(),
       });
     }
     return [...by.values()].sort((a, b) => a.check_in.localeCompare(b.check_in));
@@ -126,11 +132,14 @@ export default function CsvImport(props: { houses: { id: string; name: string }[
   const activeMonth = month || months[months.length - 1] || '';
   const chosen = byListing.filter((s) => !activeMonth || s.check_in.startsWith(activeMonth));
   const total = chosen.reduce((t, s) => t + money(s.amount), 0);
-  const currencies = [...new Set(body.map((r) => get(r, 'currency').toUpperCase()).filter(Boolean))];
-  const notYen = currencies.filter((c) => c !== 'JPY');
+  // Only the reservation lines matter (Airbnb's payout lines can be in another currency).
+  const notYen = [...new Set(chosen.map((s) => s.currency).filter((c) => c && c !== 'JPY'))];
+
+  // People: what you typed, else registered guests, else Airbnb's guest count.
+  const peopleFor = (s: { code: string; people: string }) => people[s.code] ?? (props.registered[s.code] ? String(props.registered[s.code]) : s.people);
 
   function save() {
-    const rows = chosen.map(({ listing: _l, ...s }) => ({ ...s, people: people[s.code] ?? (props.registered[s.code] ? String(props.registered[s.code]) : '') }));
+    const rows = chosen.map(({ listing: _l, currency: _c, ...s }) => ({ ...s, people: peopleFor(s) }));
     start(async () => {
       try {
         await importStays(house, rows);
@@ -227,7 +236,7 @@ export default function CsvImport(props: { houses: { id: string; name: string }[
                         <input
                           className="input w-20 py-1.5"
                           inputMode="numeric"
-                          value={people[s.code] ?? (props.registered[s.code] ? String(props.registered[s.code]) : '')}
+                          value={peopleFor(s)}
                           placeholder="?"
                           onChange={(e) => setPeople({ ...people, [s.code]: e.target.value })}
                         />
@@ -243,7 +252,7 @@ export default function CsvImport(props: { houses: { id: string; name: string }[
                   </tr>
                 </tfoot>
               </table>
-              <p className="mt-2 text-xs text-neutral-500">People is filled in from guest registrations where it can be. It&apos;s used for 宿泊数 and the accommodation tax.</p>
+              <p className="mt-2 text-xs text-neutral-500">People is filled in from guest registrations, or Airbnb&apos;s guest count. It&apos;s used for 宿泊数 and the accommodation tax.</p>
             </div>
           )}
           {notYen.length > 0 && (
