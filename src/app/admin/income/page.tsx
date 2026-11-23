@@ -5,6 +5,7 @@ import { incomeSnapshot, listBookings, listGuests, listHouses } from '@/lib/db';
 import { EXPENSE_ITEMS, MANAGER_PREFIX, num, statement, yen } from '@/lib/income';
 import AdminNav from '@/components/AdminNav';
 import PrintButton from '@/components/PrintButton';
+import IncomeChart from '@/components/IncomeChart';
 import { addManagerExpense, addStay, removeExpense, saveExpenses, updateStay } from './actions';
 
 export const dynamic = 'force-dynamic';
@@ -306,6 +307,16 @@ export default async function IncomePage({ searchParams }: { searchParams: { hou
               </tfoot>
             </table>
           </div>
+        </section>
+        <section className="card">
+          <h2 className="mb-3 text-lg font-semibold">{year} income by month</h2>
+          <IncomeChart
+            months={yearRows.map((r) => r.label)}
+            series={[
+              { name: 'Net income C', values: yearRows.map((r) => (r.has ? Math.round(r.C) : null)) },
+              ...payees.map((n) => ({ name: n === 'You' ? 'You keep' : n, values: yearRows.map((r) => (r.has ? Math.round(paid(r, n)) : null)) })),
+            ]}
+          />
         </section>
       </main>
     </>
