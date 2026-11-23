@@ -4,6 +4,7 @@ import { getBooking, guestsForBooking, listHouses } from '@/lib/db';
 import { baseUrl } from '@/lib/url';
 import AdminNav from '@/components/AdminNav';
 import CopyButton from '@/components/CopyButton';
+import DeleteBookingButton from '@/components/DeleteBookingButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -79,6 +80,9 @@ export default async function BookingPage({ params, searchParams }: { params: { 
             ))}
           </div>
         </section>
+        <div className="no-print flex justify-end">
+          <DeleteBookingButton token={booking.token} registered={guests.length} />
+        </div>
       </main>
     </>
   );

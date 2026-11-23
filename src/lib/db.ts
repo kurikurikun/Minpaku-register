@@ -14,6 +14,9 @@ const SCHEMA = {
     'full_name', 'lives_in_japan', 'nationality', 'passport_no', 'address', 'occupation',
     'phone', 'email', 'passport_file_id', 'passport_url', 'lang',
   ],
+  // Deleting a booking adds a row here. The booking and its guests are hidden in the app
+  // and its link stops working, but the original rows stay (guest records must be kept 3 years).
+  Deleted: ['token', 'deleted_at', 'deleted_by'],
 } as const;
 
 const SEED = {
@@ -42,11 +45,14 @@ function shape<T extends keyof typeof SCHEMA>(tab: T, rows: Record<string, strin
 // One round trip for all tabs, shared within a single page render.
 const snapshot = cache(async () => {
   await ensure();
-  const d = await store.read(['Houses', 'Bookings', 'Guests']);
+  const d = await store.read(['Houses', 'Bookings', 'Guests', 'Deleted']);
+  const deleted = new Set(shape('Deleted', d.Deleted ?? []).map((r) => r.token));
   return {
     houses: shape('Houses', d.Houses ?? []).filter((h) => h.id),
-    bookings: shape('Bookings', d.Bookings ?? []).map((b) => ({ ...b, guests: Number(b.guests) || 1 })),
-    guests: shape('Guests', d.Guests ?? []),
+    bookings: shape('Bookings', d.Bookings ?? [])
+      .filter((b) => !deleted.has(b.token))
+      .map((b) => ({ ...b, guests: Number(b.guests) || 1 })),
+    guests: shape('Guests', d.Guests ?? []).filter((g) => !deleted.has(g.token)),
   };
 });
 
@@ -84,6 +90,11 @@ export async function createBooking(b: Omit<Booking, 'token' | 'created_at'>) {
   const token = randomBytes(16).toString('base64url');
   await store.append('Bookings', { ...b, token, created_at: new Date().toISOString() });
   return token;
+}
+
+export async function deleteBooking(token: string, by: string) {
+  await ensure();
+  await store.append('Deleted', { token, deleted_at: new Date().toISOString(), deleted_by: by });
 }
 
 export async function addGuest(g: Partial<Guest>) {

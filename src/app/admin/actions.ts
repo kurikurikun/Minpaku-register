@@ -2,7 +2,7 @@
 
 import { redirect } from 'next/navigation';
 import { canSee, checkLogin, endSession, requireAdmin, startSession } from '@/lib/auth';
-import { createBooking } from '@/lib/db';
+import { createBooking, deleteBooking, getBooking } from '@/lib/db';
 
 export async function login(_: string | null, fd: FormData) {
   const user = checkLogin(String(fd.get('user') ?? ''), String(fd.get('password') ?? ''));
@@ -34,4 +34,11 @@ export async function addBooking(_: string | null, fd: FormData) {
   if (b.check_out <= b.check_in) return 'Check-out must be after check-in';
   const token = await createBooking(b);
   redirect(`/admin/b/${token}?new=1`);
+}
+
+export async function removeBooking(token: string) {
+  const admin = requireAdmin();
+  const booking = await getBooking(token);
+  if (booking && canSee(admin, booking.house_id)) await deleteBooking(token, admin.user);
+  redirect('/admin');
 }
