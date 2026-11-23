@@ -6,7 +6,7 @@ export default function AdminNav() {
   const admin = getAdmin();
   return (
     <header className="no-print glass sticky top-0 z-20 rounded-none border-x-0 border-t-0 !bg-white/75">
-      <div className="mx-auto flex max-w-5xl items-center gap-4 px-4 py-3 text-sm">
+      <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 text-sm">
         <Link href="/admin" className="font-semibold text-sea">Guest Check-in</Link>
         <Link href="/admin" className="hover:underline">Bookings</Link>
         <Link href="/admin/register" className="hover:underline">Register 名簿</Link>
