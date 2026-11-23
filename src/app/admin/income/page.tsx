@@ -12,7 +12,7 @@ export const maxDuration = 60;
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-export default async function IncomePage({ searchParams }: { searchParams: { house?: string; month?: string; saved?: string } }) {
+export default async function IncomePage({ searchParams }: { searchParams: { house?: string; month?: string; saved?: string; edit?: string } }) {
   const admin = requireAdmin();
   if (!admin.houses.includes('*')) redirect('/admin');
 
@@ -32,6 +32,7 @@ export default async function IncomePage({ searchParams }: { searchParams: { hou
   });
   const cur = forMonth(month);
   const st = statement(house, cur.stays, cur.expenses);
+  const editing = searchParams.edit ? st.rows.find((r) => r.code === searchParams.edit) : undefined;
   const expenseValue = (item: string) => cur.expenses.find((e) => e.item === item)?.amount ?? '';
 
   const year = month.slice(0, 4);
@@ -123,30 +124,7 @@ export default async function IncomePage({ searchParams }: { searchParams: { hou
                     <td className="py-2 pr-2 text-right">{r.personNights ? r.exempt : ''}</td>
                     {st.cleaners.length > 0 && <td className="py-2 pr-2">{r.cleanedBy}</td>}
                     <td className="no-print py-2 text-right">
-                      <details className="relative inline-block text-left">
-                        <summary className="cursor-pointer list-none text-xs text-neutral-500 underline">Edit</summary>
-                        <form action={updateStay} className="glass absolute right-0 z-10 mt-2 grid w-64 gap-2 rounded-2xl p-3">
-                          {(['house_id', 'code', 'check_in', 'check_out'] as const).map((k) => <input key={k} type="hidden" name={k} value={r[k]} />)}
-                          <label className="text-xs">Guest<input name="guest" defaultValue={r.guest} className="input mt-1 py-2" /></label>
-                          <label className="text-xs">Payout incl. cleaning (¥)<input name="amount" defaultValue={r.amount} inputMode="numeric" className="input mt-1 py-2" /></label>
-                          <div className="grid grid-cols-3 gap-2">
-                            <label className="text-xs">People<input name="people" defaultValue={r.people || ''} inputMode="numeric" className="input mt-1 py-2" /></label>
-                            <label className="text-xs">Nights<input name="nights" defaultValue={r.nights} inputMode="numeric" className="input mt-1 py-2" /></label>
-                            <label className="text-xs">Tax<input name="occupancy_tax" defaultValue={r.occupancy_tax} inputMode="numeric" className="input mt-1 py-2" /></label>
-                          </div>
-                          {st.cleaners.length > 0 && (
-                            <label className="text-xs">Cleaned by
-                              <select name="cleaner" defaultValue={r.cleanedBy} className="input mt-1 py-2">
-                                {st.cleaners.map((c) => <option key={c}>{c}</option>)}
-                              </select>
-                            </label>
-                          )}
-                          <div className="flex gap-2">
-                            <button className="btn flex-1 py-2 text-sm">Save</button>
-                            <button name="remove" value="1" className="btn-ghost py-2 text-sm">Remove</button>
-                          </div>
-                        </form>
-                      </details>
+                      <Link href={`${q(month)}&edit=${encodeURIComponent(r.code)}#edit`} className="text-xs text-neutral-500 underline">Edit</Link>
                     </td>
                   </tr>
                 ))}
@@ -169,6 +147,31 @@ export default async function IncomePage({ searchParams }: { searchParams: { hou
               </tfoot>
             </table>
           </div>
+          {editing && (
+            <form id="edit" action={updateStay} className="no-print mt-4 grid scroll-mt-32 gap-3 rounded-3xl bg-white/60 p-4 ring-1 ring-white/80 sm:grid-cols-4">
+              <div className="flex items-center justify-between sm:col-span-4">
+                <span className="font-semibold">Edit stay · {editing.check_in.slice(5).replace('-', '/')} → {editing.check_out.slice(5).replace('-', '/')}</span>
+                <Link href={q(month)} className="text-sm text-neutral-500 underline">Cancel</Link>
+              </div>
+              {(['house_id', 'code', 'check_in', 'check_out'] as const).map((k) => <input key={k} type="hidden" name={k} value={editing[k]} />)}
+              <label className="text-xs sm:col-span-2">Guest<input name="guest" defaultValue={editing.guest} className="input mt-1" /></label>
+              <label className="text-xs sm:col-span-2">Payout incl. cleaning (¥)<input name="amount" defaultValue={editing.amount} inputMode="numeric" className="input mt-1" /></label>
+              <label className="text-xs">People<input name="people" defaultValue={editing.people || ''} inputMode="numeric" className="input mt-1" /></label>
+              <label className="text-xs">Nights<input name="nights" defaultValue={editing.nights} inputMode="numeric" className="input mt-1" /></label>
+              <label className="text-xs">Tax (blank = automatic)<input name="occupancy_tax" defaultValue={editing.occupancy_tax} inputMode="numeric" className="input mt-1" /></label>
+              {st.cleaners.length > 0 ? (
+                <label className="text-xs">Cleaned by
+                  <select name="cleaner" defaultValue={editing.cleanedBy} className="input mt-1">
+                    {st.cleaners.map((c) => <option key={c}>{c}</option>)}
+                  </select>
+                </label>
+              ) : <div />}
+              <div className="flex gap-2 sm:col-span-4">
+                <button className="btn flex-1">Save</button>
+                <button name="remove" value="1" className="btn-ghost">Remove stay</button>
+              </div>
+            </form>
+          )}
           <details className="no-print mt-3">
             <summary className="cursor-pointer text-sm text-neutral-600 underline">Add a stay by hand</summary>
             <form action={addStay} className="mt-3 grid gap-2 sm:grid-cols-4">
