@@ -97,3 +97,15 @@ export async function removeExpense(fd: FormData) {
   await saveExpense({ house_id: house, month, item: clean(fd.get('item'), 80), amount: '' }, admin.user);
   redirect(`/admin/income?house=${encodeURIComponent(house)}&month=${month}`);
 }
+
+// Bank statement import: set several monthly expense lines at once.
+export async function importExpenses(house: string, rows: { month: string; item: string; amount: number }[]) {
+  const admin = requireIncome();
+  const allowed = new Set<string>(EXPENSE_ITEMS);
+  const valid = rows
+    .filter((r) => isMonth(r.month) && allowed.has(r.item) && Number.isFinite(r.amount))
+    .map((r) => ({ house_id: clean(house, 40), month: r.month, item: r.item, amount: String(Math.round(r.amount)) }));
+  await inBatches(valid, (r) => saveExpense(r, admin.user));
+  const month = valid[0]?.month ?? '';
+  redirect(`/admin/income?house=${encodeURIComponent(house)}${month ? `&month=${month}` : ''}`);
+}

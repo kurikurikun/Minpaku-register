@@ -87,6 +87,7 @@ export default async function IncomePage({ searchParams }: { searchParams: { hou
           <Link href={q(shift(1))} className="btn-ghost no-print px-4 py-2 text-sm">→</Link>
           <div className="no-print ml-auto flex gap-2">
             <Link href={`/admin/income/upload?house=${houseId}`} className="btn">Upload Airbnb CSV</Link>
+            <Link href={`/admin/income/bank?house=${houseId}`} className="btn-ghost">Upload bank CSV</Link>
             <PrintButton />
           </div>
         </div>
