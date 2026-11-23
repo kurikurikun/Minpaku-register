@@ -15,7 +15,9 @@ const DAYS = 30;
 function accounts(): Account[] {
   let list: unknown;
   try {
-    list = JSON.parse(process.env.ADMIN_ACCOUNTS || '[]');
+    // Accept curly quotes, which phones insert when the value is typed by hand.
+    const raw = (process.env.ADMIN_ACCOUNTS || '[]').replace(/[\u201C\u201D\u201E\u201F\u2033]/g, '"').replace(/[\u2018\u2019]/g, "'").trim();
+    list = JSON.parse(raw);
   } catch {
     throw new Error('ADMIN_ACCOUNTS is not valid JSON');
   }
