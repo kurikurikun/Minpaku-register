@@ -6,6 +6,7 @@ import { EXPENSE_ITEMS, MANAGER_PREFIX, num, statement, yen } from '@/lib/income
 import AdminNav from '@/components/AdminNav';
 import PrintButton from '@/components/PrintButton';
 import IncomeChart from '@/components/IncomeChart';
+import { taxReport } from '@/lib/taxreport';
 import { addManagerExpense, addStay, removeExpense, saveExpenses, updateStay } from './actions';
 
 export const dynamic = 'force-dynamic';
@@ -33,6 +34,9 @@ export default async function IncomePage({ searchParams }: { searchParams: { hou
   });
   const cur = forMonth(month);
   const st = statement(house, cur.stays, cur.expenses);
+  // Accommodation-tax monthly tally (月計表), by night date, for houses with a tax rate.
+  const withPeople = data.income.map((r) => ({ ...r, people: r.people || String(registered.get(r.code) || '') }));
+  const tax = house && num(house.tax_per_night) ? taxReport(house, withPeople, month) : null;
   const editing = searchParams.edit ? st.rows.find((r) => r.code === searchParams.edit) : undefined;
   const expenseValue = (item: string) => cur.expenses.find((e) => e.item === item)?.amount ?? '';
 
@@ -217,6 +221,47 @@ export default async function IncomePage({ searchParams }: { searchParams: { hou
             <div className="text-2xl font-semibold">{yen(st.C)}</div>
           </div>
         </section>
+
+        {/* Accommodation tax report */}
+        {tax && (
+          <section className="card">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-semibold">宿泊税 月計表 · Accommodation tax report</h2>
+                <p className="text-sm text-neutral-500">Guests per night for {monthLabel}, counted on the night they stay.</p>
+              </div>
+              <a href={`/api/admin/tax-report?house=${houseId}&month=${month}`} className="btn no-print">Download Excel (月計表)</a>
+            </div>
+            <dl className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+              <div className="rounded-2xl bg-white/50 p-3 ring-1 ring-white/80"><dt className="text-neutral-500">課税対象 ① (ア)</dt><dd className="text-lg font-semibold">{tax.totals.taxable} 泊</dd></div>
+              <div className="rounded-2xl bg-white/50 p-3 ring-1 ring-white/80"><dt className="text-neutral-500">課税対象外 ② (6千円未満)</dt><dd className="text-lg font-semibold">{tax.totals.nonTaxable} 泊</dd></div>
+              <div className="rounded-2xl bg-white/50 p-3 ring-1 ring-white/80"><dt className="text-neutral-500">合計 ①＋②</dt><dd className="text-lg font-semibold">{tax.totals.total} 泊</dd></div>
+              <div className="rounded-2xl bg-black/90 p-3 text-white"><dt className="text-white/70">Tax due 納入額 (ア × {yen(tax.rate)})</dt><dd className="text-lg font-semibold">{yen(tax.tax)}</dd></div>
+            </dl>
+            {tax.missingPeople.length > 0 && (
+              <p className="mt-3 rounded-2xl bg-white/60 p-3 text-sm ring-1 ring-black/10">
+                Missing people count for: {tax.missingPeople.map((r) => `${r.guest || r.code} (${r.check_in.slice(5).replace('-', '/')})`).join(', ')}. Add it with Edit, or these nights won&apos;t be counted.
+              </p>
+            )}
+            {tax.tax !== st.taxTotal && (
+              <p className="mt-3 text-xs text-neutral-500">
+                The statement above counts tax by check-in month ({yen(st.taxTotal)}); this report counts each night in the month it falls, so a stay over a month end is split.
+              </p>
+            )}
+            <details className="no-print mt-4 text-sm">
+              <summary className="cursor-pointer text-neutral-600 underline">How to file (eLTAX)</summary>
+              <ol className="mt-2 list-decimal space-y-1 pl-5 text-neutral-700">
+                <li>Download the Excel above.</li>
+                <li>Log in at <a className="underline" href="https://portal.pcdesknext.eltax.lta.go.jp/group-u/login/userLogin" target="_blank" rel="noreferrer">eLTAX PCdesk</a> with your My Number card (card face up in the reader).</li>
+                <li>Choose 【宿泊税】納入申告書（定額）, enter {tax.totals.taxable} 泊 / {yen(tax.tax)}, and attach the 月計表 Excel.</li>
+                <li>Submit to 広島県西部県税事務所長 and note the 申告受付番号.</li>
+              </ol>
+              <p className="mt-2 text-neutral-500">
+                Guide: <a className="underline" href="https://www.pref.hiroshima.lg.jp/site/zei/syukuhaku-tetuduki.html" target="_blank" rel="noreferrer">広島県 宿泊税の手続き</a>
+              </p>
+            </details>
+          </section>
+        )}
 
         {/* Payments */}
         {st.payouts.length > 0 && (
