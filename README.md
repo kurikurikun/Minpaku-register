@@ -60,6 +60,17 @@ In the Sheet's `Houses` tab (seeded with `shinagawa` and `hayama`):
 
 Add a row to add a house. Don't change an `id` once it has bookings.
 
+## Income (logins with "*" only)
+**Income** in the menu shows a monthly statement per house, the same as the old spreadsheet:
+A = payout per stay − cleaning fee, B = utilities + accommodation tax, C = A − B,
+manager = their expenses + cleaning × stays + manager_pct% of C, plus a by-month summary for the year.
+1. Airbnb → ホスティング収入 → 支払い済み → filter by listing and dates → download CSV (currency must be JPY).
+2. Income → **Upload Airbnb CSV** → pick the house and month, check people counts → Save.
+3. Fill in gas, power, internet, water for the month → Save expenses.
+
+House settings (Houses tab): `cleaning_fee`, `manager_name`, `manager_pct`, and for the accommodation tax
+`tax_per_night`, `tax_min_price` (per person-night), `tax_from` (date). Hiroshima: 200 / 6000 / 2026-04-01.
+
 ## Day-to-day
 1. New booking → `/admin` → house, dates, number of guests → **Create check-in link**.
 2. Copy the EN or JA message and send it via Airbnb / Booking.com / email.

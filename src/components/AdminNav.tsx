@@ -10,6 +10,7 @@ export default function AdminNav() {
         <Link href="/admin" className="font-semibold text-sea">Guest Check-in</Link>
         <Link href="/admin" className="hover:underline">Bookings</Link>
         <Link href="/admin/register" className="hover:underline">Register 名簿</Link>
+        {admin?.houses.includes('*') && <Link href="/admin/income" className="hover:underline">Income</Link>}
         <form action={logout} className="ml-auto flex items-center gap-3">
           <span className="hidden text-neutral-500 sm:inline">{admin?.user}</span>
           <button className="text-neutral-500 hover:underline">Log out</button>
