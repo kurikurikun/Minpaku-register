@@ -21,7 +21,6 @@ export default async function IncomePage({ searchParams }: { searchParams: { hou
   const houseId = searchParams.house && houses.some((h) => h.id === searchParams.house) ? searchParams.house : houses.find((h) => h.manager_name)?.id ?? houses[0]?.id;
   const month = /^\d{4}-\d{2}$/.test(searchParams.month ?? '') ? searchParams.month! : jstNow.toISOString().slice(0, 7);
   const house = houses.find((h) => h.id === houseId);
-  const manager = house?.manager_name || 'Manager';
 
   // Registered guest counts by Airbnb code, used when a stay has no people count yet.
   const registered = new Map<string, number>();
@@ -43,7 +42,11 @@ export default async function IncomePage({ searchParams }: { searchParams: { hou
     return { label, m, has: f.stays.length > 0 || f.expenses.length > 0, ...s };
   });
   const active = yearRows.filter((r) => r.has);
-  const sum = (k: 'managerTotal' | 'C' | 'ownerTotal') => active.reduce((t, r) => t + r[k], 0);
+  const sumC = active.reduce((t, r) => t + r.C, 0);
+  // Everyone who is paid from this house this year, in a stable order.
+  const payees = [...new Set([...st.payouts.map((p) => p.name), ...yearRows.flatMap((r) => r.payouts.map((p) => p.name))])];
+  const paid = (r: (typeof yearRows)[number], name: string) => r.payouts.find((p) => p.name === name)?.total ?? 0;
+  const sumPaid = (name: string) => active.reduce((t, r) => t + paid(r, name), 0);
   const monthLabel = new Date(`${month}-01T00:00:00`).toLocaleString('en-US', { month: 'long', year: 'numeric' });
   const q = (m: string) => `/admin/income?house=${houseId}&month=${m}`;
   const shift = (d: number) => {
@@ -102,6 +105,7 @@ export default async function IncomePage({ searchParams }: { searchParams: { hou
                   <th className="py-2 pr-2 text-right font-medium">Tax</th>
                   <th className="py-2 pr-2 text-right font-medium">宿泊数</th>
                   <th className="py-2 pr-2 text-right font-medium">免除</th>
+                  {st.cleaners.length > 0 && <th className="py-2 pr-2 font-medium">Cleaned by</th>}
                   <th className="no-print" />
                 </tr>
               </thead>
@@ -117,6 +121,7 @@ export default async function IncomePage({ searchParams }: { searchParams: { hou
                     <td className="py-2 pr-2 text-right">{r.tax ? yen(r.tax) : 0}{!r.taxAuto && <span className="text-neutral-400">*</span>}</td>
                     <td className="py-2 pr-2 text-right">{r.personNights || ''}</td>
                     <td className="py-2 pr-2 text-right">{r.personNights ? r.exempt : ''}</td>
+                    {st.cleaners.length > 0 && <td className="py-2 pr-2">{r.cleanedBy}</td>}
                     <td className="no-print py-2 text-right">
                       <details className="relative inline-block text-left">
                         <summary className="cursor-pointer list-none text-xs text-neutral-500 underline">Edit</summary>
@@ -129,6 +134,13 @@ export default async function IncomePage({ searchParams }: { searchParams: { hou
                             <label className="text-xs">Nights<input name="nights" defaultValue={r.nights} inputMode="numeric" className="input mt-1 py-2" /></label>
                             <label className="text-xs">Tax<input name="occupancy_tax" defaultValue={r.occupancy_tax} inputMode="numeric" className="input mt-1 py-2" /></label>
                           </div>
+                          {st.cleaners.length > 0 && (
+                            <label className="text-xs">Cleaned by
+                              <select name="cleaner" defaultValue={r.cleanedBy} className="input mt-1 py-2">
+                                {st.cleaners.map((c) => <option key={c}>{c}</option>)}
+                              </select>
+                            </label>
+                          )}
                           <div className="flex gap-2">
                             <button className="btn flex-1 py-2 text-sm">Save</button>
                             <button name="remove" value="1" className="btn-ghost py-2 text-sm">Remove</button>
@@ -139,7 +151,7 @@ export default async function IncomePage({ searchParams }: { searchParams: { hou
                   </tr>
                 ))}
                 {st.rows.length === 0 && (
-                  <tr><td colSpan={10} className="py-4 text-neutral-500">No stays yet. Upload the Airbnb CSV or add one below.</td></tr>
+                  <tr><td colSpan={11} className="py-4 text-neutral-500">No stays yet. Upload the Airbnb CSV or add one below.</td></tr>
                 )}
               </tbody>
               <tfoot>
@@ -151,6 +163,7 @@ export default async function IncomePage({ searchParams }: { searchParams: { hou
                   <td className="py-2 pr-2 text-right">{st.taxTotal ? yen(st.taxTotal) : 0}</td>
                   <td className="py-2 pr-2 text-right">{st.personNights || ''}</td>
                   <td />
+                  {st.cleaners.length > 0 && <td />}
                   <td className="no-print" />
                 </tr>
               </tfoot>
@@ -191,7 +204,7 @@ export default async function IncomePage({ searchParams }: { searchParams: { hou
               </div>
             )}
             <div className="flex items-center justify-between pt-2 sm:col-span-2">
-              <span className="font-semibold">Utilities total (B): {yen(st.B)}</span>
+              <span className="font-semibold">Utilities total (B): {yen(st.B)}{st.fromShares && st.reimburseTotal > 0 && <span className="font-normal text-neutral-500"> (incl. {yen(st.reimburseTotal)} {st.manager} paid for)</span>}</span>
               <button className="btn-ghost no-print py-2 text-sm">Save expenses</button>
             </div>
           </form>
@@ -201,45 +214,54 @@ export default async function IncomePage({ searchParams }: { searchParams: { hou
           </div>
         </section>
 
-        {/* Manager */}
-        {(house?.manager_name || st.pct > 0) && (
+        {/* Payments */}
+        {st.payouts.length > 0 && (
           <section className="card">
-            <h2 className="mb-3 text-lg font-semibold">{manager} payment</h2>
-            <div className="mb-4">
-              <div className="label">{manager}&apos;s expenses (reimbursed)</div>
-              <ul className="divide-y divide-black/5 text-sm">
-                {st.reimburse.map((e) => (
-                  <li key={e.item} className="flex items-center gap-3 py-1.5">
-                    <span className="flex-1">{e.label}</span>
-                    <span>{yen(e.value)}</span>
-                    <form action={removeExpense} className="no-print">
-                      <input type="hidden" name="house" value={houseId} />
-                      <input type="hidden" name="month" value={month} />
-                      <input type="hidden" name="item" value={e.item} />
-                      <button className="text-xs text-neutral-500 underline">remove</button>
-                    </form>
-                  </li>
-                ))}
-              </ul>
-              <form action={addManagerExpense} className="no-print mt-2 flex gap-2">
-                <input type="hidden" name="house" value={houseId} />
-                <input type="hidden" name="month" value={month} />
-                <input name="label" placeholder="e.g. cleaning supplies" className="input flex-1 py-2" required />
-                <input name="amount" placeholder="¥" inputMode="numeric" className="input w-28 py-2" required />
-                <button className="btn-ghost py-2 text-sm">Add</button>
-              </form>
+            <h2 className="mb-3 text-lg font-semibold">Payments</h2>
+            {st.manager && (
+              <div className="mb-5">
+                <div className="label">Things {st.manager} paid for (paid back{st.fromShares ? ', shared by everyone' : ''})</div>
+                <ul className="divide-y divide-black/5 text-sm">
+                  {st.reimburse.map((e) => (
+                    <li key={e.item} className="flex items-center gap-3 py-1.5">
+                      <span className="flex-1">{e.label}</span>
+                      <span>{yen(e.value)}</span>
+                      <form action={removeExpense} className="no-print">
+                        <input type="hidden" name="house" value={houseId} />
+                        <input type="hidden" name="month" value={month} />
+                        <input type="hidden" name="item" value={e.item} />
+                        <button className="text-xs text-neutral-500 underline">remove</button>
+                      </form>
+                    </li>
+                  ))}
+                </ul>
+                <form action={addManagerExpense} className="no-print mt-2 flex gap-2">
+                  <input type="hidden" name="house" value={houseId} />
+                  <input type="hidden" name="month" value={month} />
+                  <input name="label" placeholder="e.g. cleaning supplies" className="input flex-1 py-2" required />
+                  <input name="amount" placeholder="¥" inputMode="numeric" className="input w-28 py-2" required />
+                  <button className="btn-ghost py-2 text-sm">Add</button>
+                </form>
+              </div>
+            )}
+            <div className="grid gap-3 sm:grid-cols-2">
+              {st.payouts.map((p) => (
+                <div key={p.name} className={`rounded-3xl p-4 ring-1 ${p.remainder ? 'bg-white/30 ring-white/60' : 'bg-white/50 ring-white/80'}`}>
+                  <div className="flex items-baseline justify-between">
+                    <span className="font-semibold">{p.remainder ? 'You keep' : p.name}</span>
+                    <span className="text-lg font-semibold">{yen(p.total)}</span>
+                  </div>
+                  <dl className="mt-2 grid grid-cols-[1fr_auto] gap-y-1 text-sm text-neutral-600">
+                    {p.pct > 0 && <><dt>{p.pct}% of net income C</dt><dd className="text-right">{yen(p.share)}</dd></>}
+                    {p.cleanings > 0 && <><dt>Cleaning × {p.cleanings}{st.cleaning ? ` (${yen(st.cleaning)} each)` : ''}</dt><dd className="text-right">{yen(p.cleaningTotal)}</dd></>}
+                    {p.reimburse > 0 && <><dt>Paid back</dt><dd className="text-right">{yen(p.reimburse)}</dd></>}
+                    {p.reimburse < 0 && <><dt>{st.manager}&apos;s purchases</dt><dd className="text-right">−{yen(-p.reimburse)}</dd></>}
+                  </dl>
+                </div>
+              ))}
             </div>
-            <dl className="grid grid-cols-[1fr_auto] gap-y-1.5 text-sm">
-              {st.reimburseTotal > 0 && <><dt>Expenses</dt><dd className="text-right">{yen(st.reimburseTotal)}</dd></>}
-              <dt>Cleaning × {st.rows.length}{st.cleaning ? ` (${yen(st.cleaning)} each)` : ''}</dt><dd className="text-right">{yen(st.cleaningTotal)}</dd>
-              <dt>{st.pct}% of net income C</dt><dd className="text-right">{yen(st.share)}</dd>
-              <dt className="border-t border-black/10 pt-2 text-base font-semibold">Total to {manager}</dt>
-              <dd className="border-t border-black/10 pt-2 text-right text-base font-semibold">{yen(st.managerTotal)}</dd>
-              <dt className="text-neutral-500">You keep (C − {st.pct}%{st.reimburseTotal ? ' − expenses' : ''})</dt>
-              <dd className="text-right text-neutral-500">{yen(st.ownerTotal)}</dd>
-            </dl>
-            {!house?.cleaning_fee && (
-              <p className="mt-3 text-xs text-neutral-500">Set cleaning_fee, manager_name and manager_pct for this house in the Houses tab.</p>
+            {!st.cleaning && st.cleaners.length > 0 && (
+              <p className="mt-3 text-xs text-neutral-500">No cleaning fee set for this house yet (cleaning_fee in the Houses tab).</p>
             )}
           </section>
         )}
@@ -247,42 +269,40 @@ export default async function IncomePage({ searchParams }: { searchParams: { hou
         {/* Year */}
         <section className="card">
           <h2 className="mb-3 text-lg font-semibold">{year} by month</h2>
-          <table className="w-full text-sm">
-            <thead className="text-neutral-500">
-              <tr>
-                <th className="py-1.5 text-left font-medium">Month</th>
-                <th className="py-1.5 text-right font-medium">Stays</th>
-                <th className="py-1.5 text-right font-medium">Net income C</th>
-                {house?.manager_name && <th className="py-1.5 text-right font-medium">{manager}</th>}
-                <th className="py-1.5 text-right font-medium">You keep</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-black/5">
-              {yearRows.map((r) => (
-                <tr key={r.m} className={r.m === month ? 'font-semibold' : r.has ? '' : 'text-neutral-400'}>
-                  <td className="py-1.5"><Link href={q(r.m)} className="hover:underline">{r.label}</Link></td>
-                  <td className="py-1.5 text-right">{r.has ? r.rows.length : ''}</td>
-                  <td className="py-1.5 text-right">{r.has ? yen(r.C) : ''}</td>
-                  {house?.manager_name && <td className="py-1.5 text-right">{r.has ? yen(r.managerTotal) : ''}</td>}
-                  <td className="py-1.5 text-right">{r.has ? yen(r.ownerTotal) : ''}</td>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[480px] text-sm">
+              <thead className="text-neutral-500">
+                <tr>
+                  <th className="py-1.5 text-left font-medium">Month</th>
+                  <th className="py-1.5 text-right font-medium">Stays</th>
+                  <th className="py-1.5 text-right font-medium">Net income C</th>
+                  {payees.map((n) => <th key={n} className="py-1.5 text-right font-medium">{n === 'You' ? 'You keep' : n}</th>)}
                 </tr>
-              ))}
-            </tbody>
-            <tfoot className="font-semibold">
-              <tr className="border-t border-black/10">
-                <td className="py-1.5">Total</td><td />
-                <td className="py-1.5 text-right">{yen(sum('C'))}</td>
-                {house?.manager_name && <td className="py-1.5 text-right">{yen(sum('managerTotal'))}</td>}
-                <td className="py-1.5 text-right">{yen(sum('ownerTotal'))}</td>
-              </tr>
-              <tr className="text-neutral-500">
-                <td className="py-1.5">Monthly avg</td><td />
-                <td className="py-1.5 text-right">{active.length ? yen(sum('C') / active.length) : ''}</td>
-                {house?.manager_name && <td className="py-1.5 text-right">{active.length ? yen(sum('managerTotal') / active.length) : ''}</td>}
-                <td className="py-1.5 text-right">{active.length ? yen(sum('ownerTotal') / active.length) : ''}</td>
-              </tr>
-            </tfoot>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-black/5">
+                {yearRows.map((r) => (
+                  <tr key={r.m} className={r.m === month ? 'font-semibold' : r.has ? '' : 'text-neutral-400'}>
+                    <td className="py-1.5"><Link href={q(r.m)} className="hover:underline">{r.label}</Link></td>
+                    <td className="py-1.5 text-right">{r.has ? r.rows.length : ''}</td>
+                    <td className="py-1.5 text-right">{r.has ? yen(r.C) : ''}</td>
+                    {payees.map((n) => <td key={n} className="py-1.5 text-right">{r.has ? yen(paid(r, n)) : ''}</td>)}
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot className="font-semibold">
+                <tr className="border-t border-black/10">
+                  <td className="py-1.5">Total</td><td />
+                  <td className="py-1.5 text-right">{yen(sumC)}</td>
+                  {payees.map((n) => <td key={n} className="py-1.5 text-right">{yen(sumPaid(n))}</td>)}
+                </tr>
+                <tr className="text-neutral-500">
+                  <td className="py-1.5">Monthly avg</td><td />
+                  <td className="py-1.5 text-right">{active.length ? yen(sumC / active.length) : ''}</td>
+                  {payees.map((n) => <td key={n} className="py-1.5 text-right">{active.length ? yen(sumPaid(n) / active.length) : ''}</td>)}
+                </tr>
+              </tfoot>
+            </table>
+          </div>
         </section>
       </main>
     </>

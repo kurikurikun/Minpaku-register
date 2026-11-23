@@ -3,7 +3,7 @@
 import { randomBytes } from 'node:crypto';
 import { redirect } from 'next/navigation';
 import { requireAdmin } from '@/lib/auth';
-import { saveExpense, saveIncome, type IncomeRow } from '@/lib/db';
+import { incomeSnapshot, saveExpense, saveIncome, type IncomeRow } from '@/lib/db';
 import { EXPENSE_ITEMS, MANAGER_PREFIX } from '@/lib/income';
 
 function requireIncome() {
@@ -36,10 +36,21 @@ export async function importStays(house: string, rows: UploadRow[]) {
       occupancy_tax: clean(r.occupancy_tax, 12),
     }))
     .filter((r) => /^\d{4}-\d{2}-\d{2}$/.test(r.check_in))
-    .map((r) => ({ ...r, month: r.check_in.slice(0, 7), removed: '' }));
-  await inBatches(valid, (r) => saveIncome([r], admin.user));
+    .map((r) => ({ ...r, month: r.check_in.slice(0, 7), removed: '', cleaner: '' }));
+  // Keep changes made by hand on the Income page: removed stays stay removed,
+  // and a typed-in tax or a chosen cleaner is carried over.
+  const { latest } = await incomeSnapshot();
+  const toSave = valid
+    .map((r) => {
+      const prev = latest.get(`${r.house_id}|${r.code}`);
+      if (!prev) return r;
+      if (prev.removed === '1') return null;
+      return { ...r, occupancy_tax: prev.occupancy_tax || r.occupancy_tax, cleaner: prev.cleaner || '' };
+    })
+    .filter((r): r is NonNullable<typeof r> => !!r);
+  await inBatches(toSave, (r) => saveIncome([r], admin.user));
   const month = valid[0]?.month ?? '';
-  redirect(`/admin/income?house=${encodeURIComponent(house)}${month ? `&month=${month}` : ''}&saved=${valid.length}`);
+  redirect(`/admin/income?house=${encodeURIComponent(house)}${month ? `&month=${month}` : ''}&saved=${toSave.length}`);
 }
 
 export async function addStay(fd: FormData) {
@@ -52,7 +63,7 @@ export async function addStay(fd: FormData) {
 
 export async function updateStay(fd: FormData) {
   const admin = requireIncome();
-  const r = Object.fromEntries(['house_id', 'code', 'guest', 'check_in', 'check_out', 'nights', 'people', 'amount', 'occupancy_tax'].map((k) => [k, clean(fd.get(k))]));
+  const r = Object.fromEntries(['house_id', 'code', 'guest', 'check_in', 'check_out', 'nights', 'people', 'amount', 'occupancy_tax', 'cleaner'].map((k) => [k, clean(fd.get(k))]));
   const remove = fd.get('remove') === '1';
   await saveIncome([{ ...r, month: r.check_in.slice(0, 7), removed: remove ? '1' : '' }], admin.user);
   redirect(`/admin/income?house=${encodeURIComponent(r.house_id)}&month=${r.check_in.slice(0, 7)}`);

@@ -7,7 +7,7 @@ import { store } from './store';
 // Edit the Houses tab directly in Google Sheets to rename houses, add houses,
 // or set who gets the "check-in complete" email for each house.
 const SCHEMA = {
-  Houses: ['id', 'name', 'photo_url', 'ical_url', 'address', 'license_no', 'notify_email', 'cleaning_fee', 'manager_name', 'manager_pct', 'tax_per_night', 'tax_min_price', 'tax_from'],
+  Houses: ['id', 'name', 'photo_url', 'ical_url', 'address', 'license_no', 'notify_email', 'cleaning_fee', 'manager_name', 'manager_pct', 'tax_per_night', 'tax_min_price', 'tax_from', 'shares', 'cleaners'],
   Bookings: ['token', 'house_id', 'check_in', 'check_out', 'guests', 'lead_name', 'booking_ref', 'notes', 'created_by', 'created_at'],
   Guests: [
     'submitted_at', 'token', 'house_id', 'house_name', 'check_in', 'check_out', 'guest_no',
@@ -18,7 +18,7 @@ const SCHEMA = {
   // and its link stops working, but the original rows stay (guest records must be kept 3 years).
   Deleted: ['token', 'deleted_at', 'deleted_by'],
   // Income: one row per stay (latest row per house + code wins; removed=1 hides it).
-  Income: ['house_id', 'month', 'code', 'guest', 'check_in', 'check_out', 'nights', 'people', 'amount', 'occupancy_tax', 'removed', 'saved_by', 'saved_at'],
+  Income: ['house_id', 'month', 'code', 'guest', 'check_in', 'check_out', 'nights', 'people', 'amount', 'occupancy_tax', 'cleaner', 'removed', 'saved_by', 'saved_at'],
   // Expenses: monthly costs per house (latest row per house + month + item wins).
   Expenses: ['house_id', 'month', 'item', 'amount', 'saved_by', 'saved_at'],
 } as const;
@@ -133,6 +133,8 @@ export const incomeSnapshot = cache(async () => {
   const expenses = new Map<string, ExpenseRow>();
   for (const r of shape('Expenses', d.Expenses ?? [])) expenses.set(`${r.house_id}|${r.month}|${r.item}`, r);
   return {
+    // Latest row per stay including removed ones, so a re-upload can keep hand-made changes.
+    latest: income,
     income: [...income.values()].filter((r) => r.removed !== '1'),
     expenses: [...expenses.values()].filter((r) => r.amount !== ''),
   };
