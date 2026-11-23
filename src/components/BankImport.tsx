@@ -53,7 +53,7 @@ export default function BankImport(props: { houses: { id: string; name: string }
   const [txs, setTxs] = useState<Tx[] | null>(null);
   const [fileName, setFileName] = useState('');
   const [pick, setPick] = useState<Record<number, string>>({}); // tx id -> expense item ('' = not included)
-  const [shift, setShift] = useState(true); // put bills in the month after they were paid
+  const [shift, setShift] = useState(false); // bills count in the month they were paid, unless ticked
   const [error, setError] = useState('');
   const [pending, start] = useTransition();
 
@@ -129,7 +129,7 @@ export default function BankImport(props: { houses: { id: string; name: string }
         <section className="card space-y-4">
           <label className="flex items-center gap-3 text-sm">
             <input type="checkbox" className="h-5 w-5 accent-black" checked={shift} onChange={(e) => setShift(e.target.checked)} />
-            Put bills in the month <b>after</b> they were paid (e.g. paid in October → November statement)
+            Put bills in the month <b>after</b> they were paid (normally off: a bill paid in October counts for October)
           </label>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[560px] text-left text-sm">
