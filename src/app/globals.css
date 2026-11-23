@@ -53,6 +53,8 @@ body {
   .seg-on { @apply glass-dark text-white; }
 }
 
+@page { margin: 14mm; }
+
 @media print {
   .no-print { display: none !important; }
   body { background: white; }

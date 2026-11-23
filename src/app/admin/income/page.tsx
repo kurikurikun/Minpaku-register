@@ -261,6 +261,11 @@ export default async function IncomePage({ searchParams }: { searchParams: { hou
                     {p.reimburse > 0 && <><dt>Paid back</dt><dd className="text-right">{yen(p.reimburse)}</dd></>}
                     {p.reimburse < 0 && <><dt>{st.manager}&apos;s purchases</dt><dd className="text-right">−{yen(-p.reimburse)}</dd></>}
                   </dl>
+                  {!p.remainder && (
+                    <Link href={`/admin/income/statement?house=${houseId}&month=${month}&to=${encodeURIComponent(p.name)}`} className="btn-ghost no-print mt-3 w-full py-2 text-sm">
+                      Statement for {p.name}
+                    </Link>
+                  )}
                 </div>
               ))}
             </div>
